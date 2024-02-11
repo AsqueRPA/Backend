@@ -9,6 +9,8 @@ from tarsier import Tarsier, GoogleVisionOCRService
 import time
 import re
 import os
+import argparse
+from urllib.parse import quote
 
 load_dotenv()
 
@@ -232,6 +234,15 @@ class WebAgent:
 
 async def main():
     async with async_playwright() as p:
+        # Initialize the parser
+        parser = argparse.ArgumentParser()
+
+        # Add parameters
+        parser.add_argument('-p', type=str)
+
+        # Parse the arguments
+        keyword = parser.parse_args().p
+
         # Local browser
         executablePath = (
             "/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary"
@@ -245,14 +256,14 @@ async def main():
             headless=False,
         )
 
-        # Remote browser
-        userDataDir = "/home/ubuntu/.mozilla/firefox/96tbgq4x.default-release"
+        ## Remote browser
+        # userDataDir = "/home/ubuntu/.mozilla/firefox/96tbgq4x.default-release"
 
-        browser = await p.firefox.launch_persistent_context(
-            userDataDir,
-            headless=False,
-        )
-        
+        # browser = await p.firefox.launch_persistent_context(
+        #     userDataDir,
+        #     headless=False,
+        # )
+
         page = await browser.new_page()
         agent = WebAgent(page)
 
@@ -273,19 +284,11 @@ async def main():
         ## user: heres the screenshot
         ## assistant: i have pressed enter
 
-        # await agent.chat("go to linkedin")
-        # await agent.chat("put software engineer in search bar")
-        # await agent.chat("press enter on keyboard")
-        # await agent.chat("click 'See all people results' near the middle of the page, if it's not there click 'People' near the top of the page")
-
-        # await agent.chat("go to https://www.linkedin.com/search/results/people/?keywords=software%20engineer&origin=SWITCH_SEARCH_VERTICAL&sid=A~y")
-        # await agent.chat("click the first person")
-        await agent.chat(
-            "go to https://www.linkedin.com/in/aram-harutyunyan-49909314a/"
-        )
-        await agent.chat("click connect")
-        await agent.chat("click add a note")
-        await agent.chat("type 'Hi, I'd like to connect with you on LinkedIn'")
+        await agent.chat(f"go to https://www.linkedin.com/search/results/people/?keywords={quote(keyword)}&origin=SWITCH_SEARCH_VERTICAL&sid=A~y")
+        await agent.chat("click the first person")
+        # await agent.chat("click connect")
+        # await agent.chat("click add a note")
+        # await agent.chat("type 'Hi, I'd like to connect with you on LinkedIn'")
 
         # while True:
         #     content = input("You: ")
