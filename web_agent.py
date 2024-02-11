@@ -232,15 +232,10 @@ class WebAgent:
 
 async def main():
     async with async_playwright() as p:
-        executablePath = (
-            "/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary"
-        )
+        userDataDir = "/home/ubuntu/.mozilla/firefox/96tbgq4x.default-release"
 
-        userDataDir = "/Users/hugozhan/Library/Application Support/Google/Chrome Canary"
-
-        browser = await p.chromium.launch_persistent_context(
-            executable_path=executablePath,
-            user_data_dir=userDataDir,
+        browser = await p.firefox.launch_persistent_context(
+            userDataDir,
             headless=False,
         )
         page = await browser.new_page()
