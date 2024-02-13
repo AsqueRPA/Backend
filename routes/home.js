@@ -1,33 +1,98 @@
 import express from "express";
 import dotenv from "dotenv";
-import { spawn } from "child_process";
+import { Flow } from "../models/Flow.js";
+import { jobQueue, scheduleReachoutJob } from "../utils/JobQueue.js";
 
 dotenv.config();
 
 const router = express.Router();
 
-router.post("/", async (req, res) => {
+router.post("/reachout", async (req, res) => {
   try {
-    const { keyword } = req.body;
-    const pythonProcess = spawn("python3.11", [
-      "./web_agent.py",
-      "-p",
-      keyword,
-    ]);
+    const { email, keyword, question, targetAmountResponse } = req.body;
+    scheduleReachoutJob(email, keyword, question, targetAmountResponse);
+    return res.status(200).send("Reachout queued");
+  } catch (error) {
+    console.log(error);
+    return res.status(400).send("Something went wrong");
+  }
+});
 
-    pythonProcess.stdout.on("data", (data) => {
-      console.log(`stdout: ${data}`);
+router.post("/record-reachout", async (req, res) => {
+  try {
+    const { email, keyword, question, name } = req.body;
+    const flow = await Flow.findOne({ email, keyword, question });
+    flow.reachouts.push({ name, response: "" });
+    await flow.save();
+    return res.status(200).send("Reachout recorded");
+  } catch (error) {
+    console.log(error);
+    return res.status(400).send("Something went wrong");
+  }
+});
+
+router.post("/delete-reachout", async (req, res) => {
+  try {
+    const { email, keyword, question, name } = req.body;
+    const flow = await Flow.findOne({ email, keyword, question });
+    flow.reachouts = flow.reachouts.filter(
+      (reachout) => reachout.name !== name
+    );
+    await flow.save();
+    return res.status(200).send("Reachout deleted");
+  } catch (error) {
+    console.log(error);
+    return res.status(400).send("Something went wrong");
+  }
+});
+
+router.post("/record-response", async (req, res) => {
+  try {
+    const { email, keyword, question, name, response } = req.body;
+    const flow = await Flow.findOne({ email, keyword, question });
+    flow.reachouts.map((reachout) => {
+      if (reachout.name === name) {
+        reachout.response = response;
+      }
     });
+    await flow.save();
+    return res.status(200).send("Response recorded");
+  } catch (error) {
+    console.log(error);
+    return res.status(400).send("Something went wrong");
+  }
+});
 
-    pythonProcess.stderr.on("data", (data) => {
-      console.error(`stderr: ${data}`);
-    });
+router.post("/amount-reachout", async (req, res) => {
+  try {
+    const { email, keyword, question } = req.body;
+    const flow = await Flow.findOne({ email, keyword, question });
+    return res
+      .status(200)
+      .send({ currentAmountReachout: flow.reachouts.length });
+  } catch (error) {
+    console.log(error);
+    return res.status(400).send("Something went wrong");
+  }
+});
 
-    pythonProcess.on("close", (code) => {
-      console.log(`Process exited with code ${code}`);
-    });
+router.post("/update-last-page", async (req, res) => {
+  try {
+    const { email, keyword, question, lastPage } = req.body;
+    const flow = await Flow.findOne({ email, keyword, question });
+    flow.lastPage = lastPage;
+    await flow.save();
+    return res.status(200).send("Last page updated");
+  } catch (error) {
+    console.log(error);
+    return res.status(400).send("Something went wrong");
+  }
+});
 
-    return res.status(200).send("Process is running");
+router.get("/jobs-queued", async (req, res) => {
+  try {
+    const jobs = await jobQueue.getJobs(["waiting", "delayed"]);
+    return res.status(200).send({ jobsQueued: jobs.length });
   } catch (error) {
     console.log(error);
     return res.status(400).send("Something went wrong");

@@ -3,14 +3,12 @@ import openai
 from base64 import b64encode
 import json
 from dotenv import load_dotenv
-import asyncio
-from playwright.async_api import async_playwright
 from tarsier import Tarsier, GoogleVisionOCRService
 import time
 import re
 import os
-import argparse
-from urllib.parse import quote
+import requests
+import aiofiles
 
 load_dotenv()
 
@@ -30,7 +28,7 @@ class WebAgent:
         self.tag_to_xpath = {}
         self.page_text = ""
         self.instructions = """
-            You are a website crawler. You will be given instructions on what to do by browsing. You are connected to a web browser and you will be given the screenshot and the text representation of the website you are on. 
+            You are a website browsing agent. You will be given instructions on what to do by browsing. You are connected to a web browser and you will be given the screenshot and the text representation of the website you are on. 
             You can interact with the website by clicking on links, filling in text boxes, and going to a specific URL.
             
             [#ID]: text-insertable fields (e.g. textarea, input with textual type)
@@ -45,7 +43,7 @@ class WebAgent:
             {"click": "ID"}
 
             You can fill in text boxes by referencing the ID before the component in the text representation, by answering in the following JSON format:
-            {"input": {"select": "ID", "type": "Text to type"}}
+            {"input": {"select": "ID", "text": "Text to type"}}
 
             Don't include the #, @, or $ in the ID when you are answering with the JSON format.
 
@@ -59,7 +57,18 @@ class WebAgent:
             {"navigation": "back"}
             {"navigation": "forward"}
             {"navigation": "reload"}
-            
+
+            You can record the reachout by answering with the following JSON format:
+            {"record reachout": {"email": "Email", "keyword": "Keyword", "question": "Question", "name": "Name of the reachout"}}
+
+            You can delete the reachout by answering with the following JSON format:
+            {"delete reachout": {"email": "Email", "keyword": "Keyword", "question": "Question", "name": "Name of the reachout"}}
+
+            You can record the response by answering with the following JSON format:
+            {"record response": {"email": "Email", "keyword": "Keyword", "question": "Question", "name": "Name of the reachout", "response": "Response"}}
+
+            When responding with the JSON format, only include ONE JSON object and nothing else, no need for explanation.
+
             Once you are on a URL and you have found the answer to the user's question, you can answer with a regular message.
 
             Use google search by set a sub-page like 'https://google.com/search?q=search
@@ -73,12 +82,18 @@ class WebAgent:
         with open(image, "rb") as f:
             return b64encode(f.read()).decode("utf-8")
 
+    async def write_text_to_file(self, file_name, text):
+        async with aiofiles.open(file_name, "w") as file:
+            await file.write(text)
+
     async def process_page(self):
         try:
+            await self.page.wait_for_timeout(2000)
             print("Getting text...")
             page_text, tag_to_xpath = await tarsier.page_to_text(
                 self.page, tag_text_elements=True
             )
+            await self.write_text_to_file("page_text.txt", page_text)
             print("Taking screenshot...")
             await self.page.screenshot(path="screenshot.jpg", full_page=True)
         except Exception as e:
@@ -90,19 +105,20 @@ class WebAgent:
         self.page_text = page_text
 
     def extract_json(self, message):
-        json_regex = r"\{.*?\}(?=\s|$)"
-        matches = re.findall(json_regex, message, re.DOTALL)
+        json_regex = r"\{[\s\S]*\}"
+        matches = re.findall(json_regex, message)
 
         if matches:
             try:
+                # Assuming the first match is the JSON we want
                 json_data = json.loads(matches[0])
                 return json_data
             except json.JSONDecodeError as e:
                 print(f"Error decoding JSON: {e}")
-                return None
+                return {}
         else:
             print("No JSON found in the message")
-            return None
+            return {}
 
     async def chat(self, input):
         self.messages.append(
@@ -111,6 +127,7 @@ class WebAgent:
                 "content": input,
             }
         )
+
         print("User:", input)
 
         while True:
@@ -126,7 +143,6 @@ class WebAgent:
                 self.url = None
 
             if self.base64_image:
-                print(self.page_text)
                 self.messages.append(
                     {
                         "role": "user",
@@ -163,7 +179,7 @@ class WebAgent:
                     print(
                         f"Rate limit exceeded, attempt {attempt + 1} of {3}. Retrying in {60} seconds..."
                     )
-                    self.messages = [self.messages[0]] + self.messages[:-1]
+                    self.messages = [self.messages[0]] + self.messages[-2:]
                     time.sleep(60)
 
             if not response:
@@ -179,120 +195,108 @@ class WebAgent:
                 }
             )
 
+            self.messages = [self.messages[0]] + self.messages[-4:]
+
             print("Assistant:", message_text)
 
-            if '{"click":' in message_text:
-                click_data = self.extract_json(message_text)
-                id = int(click_data["click"])
-                elements = await self.page.query_selector_all(self.tag_to_xpath[id])
-                if elements:
-                    await elements[0].click()
-                    try:
-                        # await self.page.wait_for_load_state("networkidle")
-                        await self.page.wait_for_timeout(5000)
-                    except:
-                        pass
-                await self.process_page()
-                continue
-            elif '{"url":' in message_text:
-                url_data = self.extract_json(message_text)
-                self.url = url_data["url"]
-                continue
-            elif '{"input": {' in message_text:
-                input_data = json.loads(message_text)
-                id = int(input_data["input"]["select"])
-                text_to_type = input_data["input"]["type"]
-                elements = await self.page.query_selector_all(self.tag_to_xpath[id])
-                if elements:
-                    await elements[0].type(text_to_type)
-                await self.process_page()
-                continue
-            elif '{"keyboard":' in message_text:
-                keyboard_data = self.extract_json(message_text)
-                key = keyboard_data["keyboard"]
-                await self.page.keyboard.press(key)
-                try:
-                    # await self.page.wait_for_load_state("networkidle")
-                    await self.page.wait_for_timeout(5000)
-                except:
-                    pass
-                await self.process_page()
-                continue
-            elif '{"navigation":' in message_text:
-                navigation_data = self.extract_json(message_text)
-                navigation = navigation_data["navigation"]
-                if navigation == "back":
-                    await self.page.go_back()
-                elif navigation == "forward":
-                    await self.page.go_forward()
-                elif navigation == "reload":
-                    await self.page.reload()
-                await self.process_page()
+            data = self.extract_json(message_text)
+            try:
+                if "click" in data:
+                    id = int(data["click"])
+                    elements = await self.page.query_selector_all(self.tag_to_xpath[id])
+                    if elements:
+                        await elements[0].click()
+                    await self.process_page()
+                    continue
+                elif "url" in data:
+                    self.url = data["url"]
+                    continue
+                elif "input" in data:
+                    id = int(data["input"]["select"])
+                    text_to_type = data["input"]["text"]
+                    elements = await self.page.query_selector_all(self.tag_to_xpath[id])
+                    if elements:
+                        await elements[0].type(text_to_type)
+                    await self.process_page()
+                    continue
+                elif "keyboard" in data:
+                    key = data["keyboard"]
+                    await self.page.keyboard.press(key)
+                    await self.process_page()
+                    continue
+                elif "navigation" in data:
+                    navigation = data["navigation"]
+                    if navigation == "back":
+                        await self.page.go_back()
+                    elif navigation == "forward":
+                        await self.page.go_forward()
+                    elif navigation == "reload":
+                        await self.page.reload()
+                    await self.process_page()
+                    continue
+                elif "record response" in data:
+                    email = data["record response"]["email"]
+                    keyword = data["record response"]["keyword"]
+                    question = data["record response"]["question"]
+                    name = data["record response"]["name"]
+                    response = data["record response"]["response"]
+                    print(f"Recording response for {name}: {response}")
+                    url = "http://localhost/record-response"
+
+                    data = {
+                        "email": email,
+                        "keyword": keyword,
+                        "question": question,
+                        "name": name,
+                        "response": response,
+                    }
+
+                    response = requests.post(url, json=data)
+
+                    print(response.status_code)
+                    print(response.text)
+                elif "record reachout" in data:
+                    email = data["record reachout"]["email"]
+                    keyword = data["record reachout"]["keyword"]
+                    question = data["record reachout"]["question"]
+                    name = data["record reachout"]["name"]
+                    print(
+                        f"Recording reachout for name: {name}, email: {email}, keyword: {keyword}, question: {question}"
+                    )
+                    url = "http://localhost/record-reachout"
+                    data = {
+                        "email": email,
+                        "keyword": keyword,
+                        "question": question,
+                        "name": name,
+                    }
+                    response = requests.post(url, json=data)
+                    print(response.status_code)
+                    print(response.text)
+                elif "delete reachout" in data:
+                    email = data["delete reachout"]["email"]
+                    keyword = data["delete reachout"]["keyword"]
+                    question = data["delete reachout"]["question"]
+                    name = data["delete reachout"]["name"]
+                    print(
+                        f"Deleting reachout for name: {name}, email: {email}, keyword: {keyword}, question: {question}"
+                    )
+                    url = "http://localhost/delete-reachout"
+                    data = {
+                        "email": email,
+                        "keyword": keyword,
+                        "question": question,
+                        "name": name,
+                    }
+                    response = requests.post(url, json=data)
+                    print(response.status_code)
+                    print(response.text)
+            except TimeoutError as e:
+                self.messages.append(
+                    {
+                        "role": "assistant",
+                        "content": f"TimeoutError occurred: {e}",
+                    }
+                )
                 continue
             return message_text
-
-
-async def main():
-    async with async_playwright() as p:
-        # Initialize the parser
-        parser = argparse.ArgumentParser()
-
-        # Add parameters
-        parser.add_argument('-p', type=str)
-
-        # Parse the arguments
-        keyword = parser.parse_args().p
-
-        # Local browser
-        executablePath = (
-            "/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary"
-        )
-
-        userDataDir = "/Users/hugozhan/Library/Application Support/Google/Chrome Canary"
-
-        browser = await p.chromium.launch_persistent_context(
-            executable_path=executablePath,
-            user_data_dir=userDataDir,
-            headless=False,
-        )
-
-        ## Remote browser
-        # userDataDir = "/home/ubuntu/.mozilla/firefox/96tbgq4x.default-release"
-
-        # browser = await p.firefox.launch_persistent_context(
-        #     userDataDir,
-        #     headless=False,
-        # )
-
-        page = await browser.new_page()
-        agent = WebAgent(page)
-
-        ## system
-
-        ## user: go to linkedin
-        ## assistant: url
-        ## user: heres the screenshot
-        ## assistant: im on linkedin
-
-        ## user: put software engineer in search bar
-        ## assistant: type
-        ## user: heres the screenshot
-        ## assistant: i have typed
-
-        ## user: press enter on keyboard
-        ## assistant: keyboard press
-        ## user: heres the screenshot
-        ## assistant: i have pressed enter
-
-        await agent.chat(f"go to https://www.linkedin.com/search/results/people/?keywords={quote(keyword)}&origin=SWITCH_SEARCH_VERTICAL&sid=A~y")
-        await agent.chat("click the first person")
-        # await agent.chat("click connect")
-        # await agent.chat("click add a note")
-        # await agent.chat("type 'Hi, I'd like to connect with you on LinkedIn'")
-
-        # while True:
-        #     content = input("You: ")
-        #     await call_openai_api_with_retry(agent.chat, content)
-
-
-asyncio.run(main())
