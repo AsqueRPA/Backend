@@ -179,10 +179,9 @@ class WebAgent:
                     break
                 except openai.RateLimitError as e:
                     print(
-                        f"Rate limit exceeded, attempt {attempt + 1} of {3}. Retrying in {60} seconds..."
+                        f"Rate limit exceeded, attempt {attempt + 1} of {3}. Retrying in {120} seconds..."
                     )
-                    self.messages = [self.messages[0]] + self.messages[-2:]
-                    time.sleep(60)
+                    time.sleep(120)
 
             if not response:
                 raise Exception("API call failed after retrying")
