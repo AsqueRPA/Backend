@@ -12,6 +12,8 @@ import aiofiles
 
 load_dotenv()
 
+port = os.getenv("PORT")
+
 google_cloud_credentials = json.loads(os.getenv("GOOGLE_CLOUD_CREDENTIALS"))
 
 ocr_service = GoogleVisionOCRService(google_cloud_credentials)
@@ -263,7 +265,7 @@ class WebAgent:
                     print(
                         f"Recording reachout for name: {name}, email: {email}, keyword: {keyword}, question: {question}"
                     )
-                    url = "http://localhost/record-reachout"
+                    url = f"http://localhost:{port}/record-reachout"
                     data = {
                         "email": email,
                         "keyword": keyword,
@@ -281,7 +283,7 @@ class WebAgent:
                     print(
                         f"Deleting reachout for name: {name}, email: {email}, keyword: {keyword}, question: {question}"
                     )
-                    url = "http://localhost/delete-reachout"
+                    url = f"http://localhost:{port}/delete-reachout"
                     data = {
                         "email": email,
                         "keyword": keyword,
