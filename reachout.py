@@ -63,10 +63,10 @@ async def reach_out():
                     f"click person {i + 1}, sometimes it doesn't work in the first try, so click again when you don't see the person's profile"
                 )
                 await agent.chat(
-                    "skip these steps if we are already connected (the button saids 'Message') or the invitation is pending (the button saids 'Pending'), otherwise click the 'Connect' button and don't touch anything else'"
+                    "skip these steps if we are already connected (the button saids 'Message') or the invitation is pending (the button saids 'Pending'), otherwise click the 'Connect' button and don't do anything else because it will disrupt the next step"
                 )
                 await agent.chat(
-                    "skip this step if the previous step wasn't performed, otherwise click the 'Add a note' button and don't touch anything else"
+                    "skip this step if the previous step wasn't performed, otherwise click the 'Add a note' button and don't do anything else because it will disrupt the next step"
                 )
                 await agent.chat(
                     f"skip this step if the previous step wasn't performed, otherwise in the text box, write a quick introduction and ask the question: {question}, don't include any placeholder text, this will be the message sent to the recipient"
