@@ -69,16 +69,15 @@ async def reach_out():
                     "skip this step if the previous step wasn't performed, otherwise click the 'Add a note' button and don't do anything else because it will disrupt the next step"
                 )
                 await agent.chat(
-                    f"skip this step if the previous step wasn't performed, otherwise in the text box, within 300 characters, write a quick introduction and ask the question: {question}, don't include any placeholder text, this will be the message sent to the recipient.
-                    somtimes you might accidentally select the search bar (usually with ID 13), usually the textbox has a smaller ID, such as 5."
+                    f"skip this step if the previous step wasn't performed, otherwise in the text box, within 300 characters, write a quick introduction and ask the question: {question}, don't include any placeholder text, this will be the message sent to the recipient. somtimes you might accidentally select the search bar (usually with ID 13), usually the textbox has a smaller ID, such as 5. Don't do anything else because it will disrupt the next step"
                 )
                 await agent.chat(
                     f"skip this step if the previous step wasn't performed, otherwise click send."
                 )
                 await agent.chat(
-                    f"skip this step if the previous step wasn't performed, otherwise record the reachout with email: {email}, keyword: {keyword}, question: {question}, name: person's name"
+                    f"skip this step if the previous step wasn't performed, otherwise use JSON to record the reachout with email: {email}, keyword: {keyword}, question: {question}, name: person's name"
                 )
-                await agent.chat("navigation back to people list page")
+                await agent.chat("if you are not on the people list page, navigation back to people list page")
             url = "http://localhost/amount-reachout"
             data = {
                 "email": email,
