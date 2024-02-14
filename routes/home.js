@@ -10,7 +10,24 @@ const router = express.Router();
 router.post("/reachout", async (req, res) => {
   try {
     const { email, keyword, question, targetAmountResponse } = req.body;
-    scheduleReachoutJob(email, keyword, question, targetAmountResponse);
+    let flow = await Flow.findOne({ email, keyword, question });
+    if (flow === null) {
+      flow = new Flow({
+        email,
+        keyword,
+        question,
+        targetAmountResponse,
+        reachouts: [],
+      });
+      await flow.save();
+    }
+    scheduleReachoutJob(
+      email,
+      keyword,
+      question,
+      targetAmountResponse,
+      flow.lastPage
+    );
     return res.status(200).send("Reachout queued");
   } catch (error) {
     console.log(error);
