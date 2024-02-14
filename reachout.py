@@ -69,7 +69,8 @@ async def reach_out():
                     "skip this step if the previous step wasn't performed, otherwise click the 'Add a note' button and don't do anything else because it will disrupt the next step"
                 )
                 await agent.chat(
-                    f"skip this step if the previous step wasn't performed, otherwise in the text box, write a quick introduction and ask the question: {question}, don't include any placeholder text, this will be the message sent to the recipient"
+                    f"skip this step if the previous step wasn't performed, otherwise in the text box, within 300 characters, write a quick introduction and ask the question: {question}, don't include any placeholder text, this will be the message sent to the recipient.
+                    somtimes you might accidentally select the search bar (usually with ID 13), usually the textbox has a smaller ID, such as 5."
                 )
                 await agent.chat(
                     f"skip this step if the previous step wasn't performed, otherwise click send."
