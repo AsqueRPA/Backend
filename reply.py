@@ -57,8 +57,8 @@ async def reply():
             await agent.chat(
                 f"""
                 DO THESE ONLY IF THERE ARE MESSAGES IN THE INBOX AND CHAT:
-                    2. If the person doesn't have a response to the question, delete the reachout with email: {email}, keyword: {keyword}, question: {question}, name: {person}
-                    1. If the person has a response to the question, record the response with email: {email}, keyword: {keyword}, question: {question}, name: {person}, response: {person}'s response
+                    1. If the person doesn't have a response to the question, delete the reachout with email: {email}, keyword: {keyword}, question: {question}, name: {person}
+                    2. If the person has a response to the question, record the response with email: {email}, keyword: {keyword}, question: {question}, name: {person}, response: {person}'s response
                 """
             )
 

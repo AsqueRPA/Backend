@@ -21,7 +21,7 @@ jobQueue.process(async (job) => {
     return new Promise((resolve, reject) => {
       const pythonProcess = spawn("python3.11", [
         "-u",
-        "./reachout.py",
+        "./generated_reachout.py",
         "-e",
         email,
         "-k",
@@ -55,7 +55,7 @@ jobQueue.process(async (job) => {
     return new Promise((resolve, reject) => {
       const pythonProcess = spawn("python3.11", [
         "-u",
-        "./reply.py",
+        "./generated_reply.py",
         "-e",
         email,
         "-k",

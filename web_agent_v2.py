@@ -68,9 +68,6 @@ class WebAgent:
             You can record the response by answering with the following JSON format:
             {"record response": {"email": "Email", "keyword": "Keyword", "question": "Question", "name": "Name of the reachout", "response": "Response"}}
 
-            If the request asks you to perform an action if an element can be found, you can verify that the element is not present by answering with the following JSON format:
-            {"element not present": "description of the element"}
-
             When responding with the JSON format, only include ONE JSON object and nothing else, no need for explanation.
 
             Once you are on a URL and you have found the answer to the user's question, you can answer with a regular message.
@@ -81,7 +78,6 @@ class WebAgent:
             {"role": "system", "content": self.instructions},
         ]
         self.page = page
-        self.step_count = 1
 
     def image_b64(self, image):
         with open(image, "rb") as f:
@@ -126,47 +122,45 @@ class WebAgent:
             return {}
 
     async def write_code(self, input, new_code):
-        return
-        with open("comon.py", "r") as file:
+        with open("code.py", "r") as file:
             existing_code = file.read()
             response = model.chat.completions.create(
                 model="gpt-4-0125-preview",
-                messages=[
-                    {
-                        "role": "system",
-                        "content": f"""
+                messages=[{
+                    "role": "system",
+                    "content": f"""
                         You are a python code writing agent.
                         Here is the code you have written so far:
                         {existing_code}
                         You will be given a comment and a code snippet to add to the code.
                         You will need to add the code snippet to the code and add the comment to the code.
-                        If the comment describes a conditional statement (e.g. if conditions), then add the code await agent.chat(comment) instead of the code that the user has given you.
-                        The number before the comment is the step number. You will need to add the comment and the code snippet to the code in the order of the step number.
+                        If the comment mentions if statements, loops, or any other control flow, you will need to add the code snippet to the control flow.
+                        Your response should only be the updated code, it will go straight into the python file.
                     """,
-                    },
-                    {
-                        "role": "user",
-                        "content": f"""
-                        Here is the comment for this line of code that I want to add: "[{self.step_count}]. {input}"
+                },{
+                    "role": "user",
+                    "content": f"""
+                        Here is the comment for this line of code that I want to add: {input}
                         Here is the code I want to add: {new_code}
                     """,
-                    },
-                ],
+                }],
                 max_tokens=4096,
             )
             message = response.choices[0].message
             message_text = message.content
             print("Code Assistant:", message_text)
             # replace the existing code with the message_text
-            with open("comon.py", "w") as file:
+            with open("code.py", "w") as file:
                 file.write(message_text)
-            self.step_count += 1
+
 
     async def chat(self, input):
-        self.messages = [
-            {"role": "system", "content": self.instructions},
-            {"role": "user", "content": input},
-        ]
+        self.messages.append(
+            {
+                "role": "user",
+                "content": input,
+            }
+        )
 
         print("User:", input)
 
@@ -234,24 +228,19 @@ class WebAgent:
                     elements = await self.page.query_selector_all(self.tag_to_xpath[id])
                     if elements:
                         await elements[0].click()
-                        await self.write_code(
-                            input,
+                        self.write_code(
                             f"""
-                                await page.wait_for_selector('{self.tag_to_xpath[id]}')
-                                elements = await page.query_selector_all('{self.tag_to_xpath[id]}')
-                                if elements:
-                                    await elements[0].click()
-                                    await page.wait_for_timeout(2000)
-                            """,
+                            elements = await page.query_selector_all('{self.tag_to_xpath[id]}')
+                            if elements:
+                                await elements[0].click()
+                        """
                         )
                     await self.process_page()
                     continue
                 elif "url" in data:
                     url = data["url"]
                     await self.page.goto(url)
-                    await self.write_code(
-                        input, f"await page.goto('{url}', waitUntil='domcontentloaded')"
-                    )
+                    self.write_code(f"await page.goto('{url}')")
                     await self.process_page()
                     continue
                 elif "input" in data:
@@ -260,68 +249,34 @@ class WebAgent:
                     elements = await self.page.query_selector_all(self.tag_to_xpath[id])
                     if elements:
                         await elements[0].type(text_to_type)
-                        await self.write_code(
-                            input,
+                        self.write_code(
                             f"""
-                                await page.wait_for_selector('{self.tag_to_xpath[id]}')
-                                elements = await page.query_selector_all('{self.tag_to_xpath[id]}')
-                                if elements:
-                                    await elements[0].type('{text_to_type}')
-                                    await page.wait_for_timeout(2000)
-                            """,
+                            elements = await page.query_selector_all('{self.tag_to_xpath[id]}')
+                            if elements:
+                                await elements[0].type('{text_to_type}')
+                        """
                         )
                     await self.process_page()
                     continue
                 elif "keyboard" in data:
                     key = data["keyboard"]
                     await self.page.keyboard.press(key)
-                    await self.write_code(
-                        input,
-                        f"""
-                            await page.keyboard.press('{key}'
-                            await page.wait_for_timeout(2000)
-                        """,
-                    )
+                    self.write_code(f"await page.keyboard.press('{key}')")
                     await self.process_page()
                     continue
                 elif "navigation" in data:
                     navigation = data["navigation"]
                     if navigation == "back":
                         await self.page.go_back()
-                        await self.write_code(
-                            input,
-                            """
-                                await page.go_back()
-                                await page.wait_for_timeout(2000)
-                            """,
-                        )
+                        self.write_code("await page.go_back()")
                     elif navigation == "forward":
                         await self.page.go_forward()
-                        await self.write_code(
-                            input,
-                            """
-                                await page.go_forward()
-                                await page.wait_for_timeout(2000)
-                            """,
-                        )
+                        self.write_code("await page.go_forward()")
                     elif navigation == "reload":
                         await self.page.reload()
-                        await self.write_code(
-                            input,
-                            """
-                                await page.reload()
-                                await page.wait_for_timeout(2000)
-                            """,
-                        )
+                        self.write_code("await page.reload()")
                     await self.process_page()
                     continue
-                elif "element not present" in data:
-                    await self.write_code(
-                        input,
-                        f"""
-                            await agent.chat(\"\"\"{input}\"\"\")
-                        """,
-                    )
                 elif "record response" in data:
                     email = data["record response"]["email"]
                     keyword = data["record response"]["keyword"]
