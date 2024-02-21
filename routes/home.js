@@ -1,10 +1,11 @@
+
 import express from "express";
 import dotenv from "dotenv";
 import { Flow } from "../models/Flow.js";
-import { jobQueue, scheduleReachoutJob } from "../utils/JobQueue.js";
+// import { jobQueue, scheduleReachoutJob } from "../utils/JobQueue.js";
+// the above line is commmented out because it fucks the whole thing up
 
 dotenv.config();
-
 const router = express.Router();
 
 router.post("/reachout", async (req, res) => {

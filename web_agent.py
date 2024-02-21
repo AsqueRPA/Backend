@@ -13,7 +13,6 @@ import aiofiles
 load_dotenv()
 
 port = os.getenv("PORT")
-
 google_cloud_credentials = json.loads(os.getenv("GOOGLE_CLOUD_CREDENTIALS"))
 
 ocr_service = GoogleVisionOCRService(google_cloud_credentials)
