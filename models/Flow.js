@@ -2,8 +2,12 @@ import mongoose from "mongoose";
 
 const FlowSchema = new mongoose.Schema({
   /**************************************************************************
-   *                           Flow Information                          *
+   *                             Flow Information                           *
    **************************************************************************/
+  account: {
+    type: String,
+    required: true,
+  },
   email: {
     type: String,
     required: true,

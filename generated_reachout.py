@@ -8,6 +8,7 @@ import requests
 import os
 from dotenv import load_dotenv
 import random
+from send_email import send_email
 
 load_dotenv()
 
@@ -19,7 +20,7 @@ async def main():
         # Initialize the parser
         parser = argparse.ArgumentParser()
 
-        # Add parameters 
+        # Add parameters
         parser.add_argument("-e", type=str)
         parser.add_argument("-k", type=str)
         parser.add_argument("-q", type=str)
@@ -27,24 +28,18 @@ async def main():
         parser.add_argument("-l", type=int)
 
         # Parse the arguments
-        # email = parser.parse_args().e
-        # keyword = parser.parse_args().k
-        # question = parser.parse_args().q
-        # target_amount_response = parser.parse_args().t
-        # last_page = parser.parse_args().l
-        email = 'dyllanliuuu@gmail.com'
-        keyword = 'UC Berkeley' ##words that go into the LinkedIn Search bar
-        question = 'Happy to connect!' 
-        target_amount_response = 2
-        premium = False ##Weather the current LinkedIn Account is premium or not
-        last_page = 3
+        email = parser.parse_args().e
+        keyword = parser.parse_args().k
+        question = parser.parse_args().q
+        target_amount_response = parser.parse_args().t
+        last_page = parser.parse_args().l
 
         # Local browser
         executablePath = (
             "/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary"
         )
 
-        userDataDir = "/Users/dyllanliu/Library/Application Support/Google/Chrome Canary/Default"
+        userDataDir = "/Users/hugozhan/Library/Application Support/Google/Chrome Canary"
         print("Launching browser")
         browser = await p.chromium.launch_persistent_context(
             executable_path=executablePath,
@@ -73,15 +68,27 @@ async def main():
         # await page.get_by_label("Sign in", exact=True).click()
         # print('finished logging in')
         while True:
-            await page.goto(
-                f"https://www.linkedin.com/search/results/people/?keywords={quote(keyword)}&origin=SWITCH_SEARCH_VERTICAL&sid=A~y&page={page_count}",
-                wait_until="domcontentloaded",
-            )
+            try:
+                await page.goto(
+                    f"https://www.linkedin.com/search/results/people/?keywords={quote(keyword)}&origin=SWITCH_SEARCH_VERTICAL&sid=A~y&page={page_count}",
+                    wait_until="domcontentloaded",
+                )
+            except Exception as e:
+                print(e)
+                await page.screenshot(path="screenshot.png")
+                send_email("hugozhan0802@gmail.com", "Error", str(e), "screenshot.png")
             for i in range(10):
-                person_selector = f"//li[contains(@class, 'reusable-search__result-container')][{i+1}]"
-                await page.wait_for_selector(person_selector)
-                await page.click(person_selector, force=True)
-                await page.wait_for_selector("div.pv-top-card-v2-ctas")
+                try:
+                    person_selector = f"//li[contains(@class, 'reusable-search__result-container')][{i+1}]"
+                    await page.wait_for_selector(person_selector)
+                    await page.click(person_selector, force=True)
+                    await page.wait_for_selector(
+                        "div.pv-top-card-v2-ctas", timeout=5000
+                    )
+                except Exception as e:
+                    print(e)
+                    await page.mouse.click(0, 0)
+                    continue
                 await page.wait_for_selector(
                     "h1.text-heading-xlarge.inline.t-24.v-align-middle.break-words"
                 )
@@ -92,27 +99,27 @@ async def main():
                 connect_button = await page.query_selector(
                     "button.artdeco-button.artdeco-button--2.artdeco-button--primary.ember-view.pvs-profile-actions__action"
                 )
-                if connect_button and (await connect_button.text_content()).strip() == "Connect":
+                if (
+                    connect_button
+                    and (await connect_button.text_content()).strip() == "Connect"
+                ):
                     try:
                         await connect_button.click()
-                        if premium: ##only get to send infinite notes if using LinkedIn Premium
-                            await page.wait_for_selector(
-                                '[aria-label="Add a note"]', timeout=5000
-                        )
-                            await page.click('[aria-label="Add a note"]')
-                            await page.fill("textarea", "Happy to connect!")
-                            await page.click( ##clicking the 'send' button
-                            ".artdeco-button.artdeco-button--2.artdeco-button--primary.ember-view.ml1"
-                        ) 
-
-                        await page.wait_for_timeout(random.randint(2000, 5000));               
-                        await page.click('[aria-label="Send now"]')
-                        await page.wait_for_timeout(random.randint(2000, 5000));               
-                        # await agent.process_page()
-                        # await agent.chat(
-                        #     f"In the custom message text box, within 300 characters, write a quick introduction and ask the question: {question}, don't include any placeholder text, this will be the message sent to the recipient. somtimes you might accidentally select the search bar (usually with ID 13), usually the textbox has a smaller ID, such as 5. Don't do anything else because it will disrupt the next step"
-                        # )
                         await page.wait_for_timeout(random.randint(2000, 5000))
+                        await page.wait_for_selector(
+                            '[aria-label="Add a note"]', timeout=5000
+                        )
+                        await page.click('[aria-label="Add a note"]')
+                        await page.wait_for_timeout(random.randint(2000, 5000))
+                        await agent.process_page()
+                        await agent.chat(
+                            f"In the 'Add a note' text box, within 300 characters, write a quick introduction and ask the question: {question}, don't include any placeholder text, this will be the message sent to the recipient. somtimes you might accidentally select the search bar (usually with ID 13), usually the textbox has a smaller ID, such as 5. Don't do anything else because it will disrupt the next step. If there is text in the textbox already, it means you have already filled in the message, don't try to fill in the message again"
+                        )
+                        await page.wait_for_timeout(random.randint(2000, 5000))
+                        await page.click(
+                            ".artdeco-button.artdeco-button--2.artdeco-button--primary.ember-view.ml1"
+                        )
+                        url = "http://localhost/record-reachout"
                         data = {
                             "email": email,
                             "keyword": keyword,
@@ -157,3 +164,4 @@ async def main():
 
 
 asyncio.run(main())
+

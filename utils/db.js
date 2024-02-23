@@ -1,21 +1,16 @@
-console.log("welcome to db.js")
 import { MongoClient } from "mongodb";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 dotenv.config();
 
 const connectDB = async () => {
-  console.log('why is this line not printing')
   let db;
   if (process.env.NODE_ENV === "production") {
     db = process.env.DB;
   } else {
     db = process.env.DEV_DB;
   }
-
-  console.log("database url:" + db);
-  console.log('bruh this is db.js')
-
+  
   await mongoose
     .connect(db)
     .then(() => {
