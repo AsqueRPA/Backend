@@ -54,7 +54,7 @@ async def main():
             userDataDir,
             headless=False,
         )
-        
+
         page = await browser.new_page()
         agent = WebAgent(page)
 
@@ -141,7 +141,7 @@ async def main():
                         print(e)
                 print("back")
                 await page.go_back(wait_until="domcontentloaded")
-            url = "http://localhost/amount-reachout"
+            url = f"http://localhost:{port}/amount-reachout"
             data = {
                 "email": email,
                 "keyword": keyword,
@@ -157,7 +157,7 @@ async def main():
                 print(f"Error: {response.status_code}")
                 print(response.text)
 
-            url = "http://localhost/update-last-page"
+            url = f"http://localhost:{port}/update-last-page"
             data = {
                 "email": email,
                 "keyword": keyword,
