@@ -127,7 +127,7 @@ async def main():
                         await page.click(
                             ".artdeco-button.artdeco-button--2.artdeco-button--primary.ember-view.ml1"
                         )
-                        url = "http://localhost/record-reachout"
+                        url = f"http://localhost:{port}/record-reachout"
                         data = {
                             "email": email,
                             "keyword": keyword,
