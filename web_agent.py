@@ -65,7 +65,7 @@ class WebAgent:
             {"delete reachout": {"email": "Email", "keyword": "Keyword", "question": "Question", "name": "Name of the reachout"}}
 
             You can record the response by answering with the following JSON format:
-            {"record response": {"email": "Email", "keyword": "Keyword", "question": "Question", "name": "Name of the reachout", "response": "Response"}}
+            {"record response": {"account": "Account", "email": "Email", "keyword": "Keyword", "question": "Question", "name": "Name of the reachout", "response": "Response"}}
 
             If the request asks you to perform an action if an element can be found, you can verify that the element is not present by answering with the following JSON format:
             {"element not present": "description of the element"}
@@ -322,6 +322,7 @@ class WebAgent:
                         """,
                     )
                 elif "record response" in data:
+                    account = data["record response"]["account"]
                     email = data["record response"]["email"]
                     keyword = data["record response"]["keyword"]
                     question = data["record response"]["question"]
@@ -331,6 +332,7 @@ class WebAgent:
                     url = "http://localhost/record-response"
 
                     data = {
+                        "account": account,
                         "email": email,
                         "keyword": keyword,
                         "question": question,

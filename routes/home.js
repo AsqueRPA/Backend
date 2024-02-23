@@ -8,10 +8,11 @@ const router = express.Router();
 
 router.post("/reachout", async (req, res) => {
   try {
-    const { email, keyword, question, targetAmountResponse } = req.body;
-    let flow = await Flow.findOne({ email, keyword, question });
+    const { account, email, keyword, question, targetAmountResponse } = req.body;
+    let flow = await Flow.findOne({ account, email, keyword, question });
     if (flow === null) {
       flow = new Flow({
+        account,
         email,
         keyword,
         question,
@@ -21,6 +22,7 @@ router.post("/reachout", async (req, res) => {
       await flow.save();
     }
     scheduleReachoutJob(
+      account,
       email,
       keyword,
       question,
@@ -36,8 +38,8 @@ router.post("/reachout", async (req, res) => {
 
 router.post("/record-reachout", async (req, res) => {
   try {
-    const { email, keyword, question, name } = req.body;
-    const flow = await Flow.findOne({ email, keyword, question });
+    const { account, email, keyword, question, name } = req.body;
+    const flow = await Flow.findOne({ account, email, keyword, question });
     flow.reachouts.push({ name, response: "" });
     await flow.save();
     return res.status(200).send("Reachout recorded");
@@ -49,8 +51,8 @@ router.post("/record-reachout", async (req, res) => {
 
 router.post("/delete-reachout", async (req, res) => {
   try {
-    const { email, keyword, question, name } = req.body;
-    const flow = await Flow.findOne({ email, keyword, question });
+    const { account, email, keyword, question, name } = req.body;
+    const flow = await Flow.findOne({ account, email, keyword, question });
     flow.reachouts = flow.reachouts.filter(
       (reachout) => reachout.name !== name
     );
@@ -64,8 +66,8 @@ router.post("/delete-reachout", async (req, res) => {
 
 router.post("/record-response", async (req, res) => {
   try {
-    const { email, keyword, question, name, response } = req.body;
-    const flow = await Flow.findOne({ email, keyword, question });
+    const { account, email, keyword, question, name, response } = req.body;
+    const flow = await Flow.findOne({ account, email, keyword, question });
     flow.reachouts.map((reachout) => {
       if (reachout.name === name) {
         reachout.response = response;
@@ -81,8 +83,8 @@ router.post("/record-response", async (req, res) => {
 
 router.post("/amount-reachout", async (req, res) => {
   try {
-    const { email, keyword, question } = req.body;
-    const flow = await Flow.findOne({ email, keyword, question });
+    const { account, email, keyword, question } = req.body;
+    const flow = await Flow.findOne({ account, email, keyword, question });
     return res
       .status(200)
       .send({ currentAmountReachout: flow.reachouts.length });
@@ -94,8 +96,8 @@ router.post("/amount-reachout", async (req, res) => {
 
 router.post("/update-last-page", async (req, res) => {
   try {
-    const { email, keyword, question, lastPage } = req.body;
-    const flow = await Flow.findOne({ email, keyword, question });
+    const { account, email, keyword, question, lastPage } = req.body;
+    const flow = await Flow.findOne({ account, email, keyword, question });
     flow.lastPage = lastPage;
     await flow.save();
     return res.status(200).send("Last page updated");

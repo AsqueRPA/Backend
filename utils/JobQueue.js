@@ -14,14 +14,14 @@ const jobQueue = new Bull("jobQueue", {
 await jobQueue.empty();
 
 jobQueue.process(async (job) => {
-  const { email, keyword, question, type, targetAmountResponse, lastPage } = job.data;
+  const { account, email, keyword, question, type, targetAmountResponse, lastPage } = job.data;
   if (type === "reachout") {
-    
-
     return new Promise((resolve, reject) => {
       const pythonProcess = spawn("python3.11", [
         "-u",
         "./generated_reachout.py",
+        "-a",
+        account,
         "-e",
         email,
         "-k",
@@ -51,11 +51,13 @@ jobQueue.process(async (job) => {
       });
     });
   } else {
-    const flow = await Flow.findOne({ email, keyword, question });
+    const flow = await Flow.findOne({ account, email, keyword, question });
     return new Promise((resolve, reject) => {
       const pythonProcess = spawn("python3.11", [
         "-u",
         "./generated_reply.py",
+        "-a",
+        account,
         "-e",
         email,
         "-k",
@@ -87,10 +89,10 @@ jobQueue.process(async (job) => {
   }
 });
 
-function scheduleReplyJob(email, keyword, question, delay) {
+function scheduleReplyJob(account, email, keyword, question, delay) {
   jobQueue
     .add(
-      { email, keyword, question, type: "reply" },
+      { account, email, keyword, question, type: "reply" },
       {
         delay: delay,
       }
@@ -114,9 +116,9 @@ function scheduleReplyJob(email, keyword, question, delay) {
     });
 }
 
-function scheduleReachoutJob(email, keyword, question, targetAmountResponse, lastPage) {
+function scheduleReachoutJob(account, email, keyword, question, targetAmountResponse, lastPage) {
   jobQueue
-    .add({ email, keyword, question, targetAmountResponse, lastPage, type: "reachout" })
+    .add({ account, email, keyword, question, targetAmountResponse, lastPage, type: "reachout" })
     .then((job) => {
       job
         .finished()

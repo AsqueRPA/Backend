@@ -21,6 +21,7 @@ async def main():
         parser = argparse.ArgumentParser()
 
         # Add parameters
+        parser.add_argument("-a", type=str)
         parser.add_argument("-e", type=str)
         parser.add_argument("-k", type=str)
         parser.add_argument("-q", type=str)
@@ -28,6 +29,7 @@ async def main():
         parser.add_argument("-l", type=int)
 
         # Parse the arguments
+        account = parser.parse_args().a
         email = parser.parse_args().e
         keyword = parser.parse_args().k
         question = parser.parse_args().q
@@ -129,6 +131,7 @@ async def main():
                         )
                         url = f"http://localhost:{port}/record-reachout"
                         data = {
+                            "account": account,
                             "email": email,
                             "keyword": keyword,
                             "question": question,
@@ -143,6 +146,7 @@ async def main():
                 await page.go_back(wait_until="domcontentloaded")
             url = f"http://localhost:{port}/amount-reachout"
             data = {
+                "account": account,
                 "email": email,
                 "keyword": keyword,
                 "question": question,
@@ -159,6 +163,7 @@ async def main():
 
             url = f"http://localhost:{port}/update-last-page"
             data = {
+                "account": account,
                 "email": email,
                 "keyword": keyword,
                 "question": question,
@@ -172,4 +177,3 @@ async def main():
 
 
 asyncio.run(main())
-

@@ -14,12 +14,14 @@ async def main():
             return arg.split(",")
 
         # Add parameters
+        parser.add_argument("-a", type=str)
         parser.add_argument("-e", type=str)
         parser.add_argument("-k", type=str)
         parser.add_argument("-q", type=str)
         parser.add_argument("-r", type=list_of_strings)
 
         # Parse the arguments
+        account = parser.parse_args().a
         email = parser.parse_args().e
         keyword = parser.parse_args().k
         question = parser.parse_args().q
@@ -71,8 +73,8 @@ async def main():
                 await agent.chat(
                     f"""
                     DO THESE ONLY IF THERE ARE MESSAGES IN THE INBOX AND CHAT:
-                        1. If the person doesn't have a response to the question, delete the reachout with email: {email}, keyword: {keyword}, question: {question}, name: {person}
-                        2. If the person has a response to the question, record the response with email: {email}, keyword: {keyword}, question: {question}, name: {person}, response: {person}'s response
+                        1. If the person doesn't have a response to the question, delete the reachout with account: {account}, email: {email}, keyword: {keyword}, question: {question}, name: {person}
+                        2. If the person has a response to the question, record the response with account: {account}, email: {email}, keyword: {keyword}, question: {question}, name: {person}, response: {person}'s response
                     """
                 )
 
