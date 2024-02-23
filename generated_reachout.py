@@ -34,19 +34,27 @@ async def main():
         target_amount_response = parser.parse_args().t
         last_page = parser.parse_args().l
 
-        # Local browser
-        executablePath = (
-            "/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary"
-        )
+        # # Local browser
+        # executablePath = (
+        #     "/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary"
+        # )
 
-        userDataDir = "/Users/hugozhan/Library/Application Support/Google/Chrome Canary"
-        print("Launching browser")
-        browser = await p.chromium.launch_persistent_context(
-            executable_path=executablePath,
-            user_data_dir=userDataDir,
+        # userDataDir = "/Users/hugozhan/Library/Application Support/Google/Chrome Canary"
+
+        # browser = await p.chromium.launch_persistent_context(
+        #     executable_path=executablePath,
+        #     user_data_dir=userDataDir,
+        #     headless=False,
+        # )
+
+        # Remote browser
+        userDataDir = "/home/ubuntu/.mozilla/firefox/96tbgq4x.default-release"
+
+        browser = await p.firefox.launch_persistent_context(
+            userDataDir,
             headless=False,
         )
-        print("Browser launched")
+        
         page = await browser.new_page()
         agent = WebAgent(page)
 

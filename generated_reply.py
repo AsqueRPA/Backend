@@ -25,16 +25,24 @@ async def main():
         question = parser.parse_args().q
         reachouts = parser.parse_args().r
 
-        # Local browser
-        executablePath = (
-            "/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary"
-        )
+        # # Local browser
+        # executablePath = (
+        #     "/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary"
+        # )
 
-        userDataDir = "/Users/hugozhan/Library/Application Support/Google/Chrome Canary"
+        # userDataDir = "/Users/hugozhan/Library/Application Support/Google/Chrome Canary"
 
-        browser = await p.chromium.launch_persistent_context(
-            executable_path=executablePath,
-            user_data_dir=userDataDir,
+        # browser = await p.chromium.launch_persistent_context(
+        #     executable_path=executablePath,
+        #     user_data_dir=userDataDir,
+        #     headless=False,
+        # )
+
+        # Remote browser
+        userDataDir = "/home/ubuntu/.mozilla/firefox/96tbgq4x.default-release"
+
+        browser = await p.firefox.launch_persistent_context(
+            userDataDir,
             headless=False,
         )
 
