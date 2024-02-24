@@ -88,11 +88,13 @@ async def main():
                 print(e)
                 await page.screenshot(path="screenshot.png")
                 send_email("hugozhan0802@gmail.com", "Error", str(e), "screenshot.png")
+                break
             for i in range(10):
+                start_time = time.time()  # capture the start time
                 try:
                     person_selector = f"//li[contains(@class, 'reusable-search__result-container')][{i+1}]"
-                    await page.wait_for_selector(person_selector)
-                    await page.click(person_selector, force=True)
+                    await page.wait_for_selector(person_selector, timeout=5000)
+                    await page.click(person_selector, force=True, timeout=5000)
                     await page.wait_for_selector(
                         "div.pv-top-card-v2-ctas", timeout=5000
                     )
@@ -101,10 +103,12 @@ async def main():
                     await page.mouse.click(0, 0)
                     continue
                 await page.wait_for_selector(
-                    "h1.text-heading-xlarge.inline.t-24.v-align-middle.break-words"
+                    "h1.text-heading-xlarge.inline.t-24.v-align-middle.break-words",
+                    timeout=5000,
                 )
                 name = await page.text_content(
-                    "h1.text-heading-xlarge.inline.t-24.v-align-middle.break-words"
+                    "h1.text-heading-xlarge.inline.t-24.v-align-middle.break-words",
+                    timeout=5000,
                 )
                 await page.wait_for_timeout(5000)
                 connect_button = await page.query_selector(
@@ -115,12 +119,12 @@ async def main():
                     and (await connect_button.text_content()).strip() == "Connect"
                 ):
                     try:
-                        await connect_button.click()
+                        await connect_button.click(timeout=5000)
                         await page.wait_for_timeout(random.randint(2000, 5000))
                         await page.wait_for_selector(
                             '[aria-label="Add a note"]', timeout=5000
                         )
-                        await page.click('[aria-label="Add a note"]')
+                        await page.click('[aria-label="Add a note"]', timeout=5000)
                         await page.wait_for_timeout(random.randint(2000, 5000))
                         await agent.process_page()
                         await agent.chat(
@@ -128,7 +132,8 @@ async def main():
                         )
                         await page.wait_for_timeout(random.randint(2000, 5000))
                         await page.click(
-                            ".artdeco-button.artdeco-button--2.artdeco-button--primary.ember-view.ml1"
+                            ".artdeco-button.artdeco-button--2.artdeco-button--primary.ember-view.ml1",
+                            timeout=5000,
                         )
                         url = f"http://localhost:{port}/record-reachout"
                         data = {
@@ -144,7 +149,10 @@ async def main():
                     except Exception as e:
                         print(e)
                 print("back")
-                await page.go_back(wait_until="domcontentloaded")
+                await page.go_back(wait_until="domcontentloaded", timeout=5000)
+                end_time = time.time()  # capture the end time
+                elapsed_time = end_time - start_time  # calculate elapsed time
+                print(f"The code took {elapsed_time} seconds to run.")
             url = f"http://localhost:{port}/amount-reachout"
             data = {
                 "account": account,
@@ -177,11 +185,4 @@ async def main():
             page_count += 1
 
 
-start_time = time.time()  # capture the start time
 asyncio.run(main())
-end_time = time.time()  # capture the end time
-elapsed_time = end_time - start_time  # calculate elapsed time
-print(f"The code took {elapsed_time} seconds to run.")
-send_email(
-    "hugozhan0802@gmail.com", "Time", f"The code took {elapsed_time} seconds to run."
-)
