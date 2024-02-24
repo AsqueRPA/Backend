@@ -9,6 +9,7 @@ import os
 from dotenv import load_dotenv
 import random
 from send_email import send_email
+import time
 
 load_dotenv()
 
@@ -176,4 +177,11 @@ async def main():
             page_count += 1
 
 
+start_time = time.time()  # capture the start time
 asyncio.run(main())
+end_time = time.time()  # capture the end time
+elapsed_time = end_time - start_time  # calculate elapsed time
+print(f"The code took {elapsed_time} seconds to run.")
+send_email(
+    "hugozhan0802@gmail.com", "Time", f"The code took {elapsed_time} seconds to run."
+)
