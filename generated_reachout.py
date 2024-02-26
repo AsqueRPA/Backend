@@ -102,18 +102,23 @@ async def main():
                     print(e)
                     await page.mouse.click(0, 0)
                     continue
-                await page.wait_for_selector(
-                    "h1.text-heading-xlarge.inline.t-24.v-align-middle.break-words",
-                    timeout=5000,
-                )
-                name = await page.text_content(
-                    "h1.text-heading-xlarge.inline.t-24.v-align-middle.break-words",
-                    timeout=5000,
-                )
-                await page.wait_for_timeout(5000)
-                connect_button = await page.query_selector(
-                    "button.artdeco-button.artdeco-button--2.artdeco-button--primary.ember-view.pvs-profile-actions__action"
-                )
+                # this might break
+                try:
+                    await page.wait_for_selector(
+                        "h1.text-heading-xlarge.inline.t-24.v-align-middle.break-words",
+                        timeout=5000,
+                    )
+                    name = await page.text_content(
+                        "h1.text-heading-xlarge.inline.t-24.v-align-middle.break-words",
+                        timeout=5000,
+                    )
+                    await page.wait_for_timeout(5000)
+                    connect_button = await page.query_selector(
+                        "button.artdeco-button.artdeco-button--2.artdeco-button--primary.ember-view.pvs-profile-actions__action"
+                    )
+                except Exception as e:
+                    print(e)
+                    continue
                 if (
                     connect_button
                     and (await connect_button.text_content()).strip() == "Connect"
@@ -185,4 +190,8 @@ async def main():
             page_count += 1
 
 
-asyncio.run(main())
+try:
+    asyncio.run(main())
+except Exception as e:
+    print(e)
+    send_email("hugozhan0802@gmail.com", "Error", str(e), "screenshot.png")
