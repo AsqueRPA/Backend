@@ -28,6 +28,7 @@ router.post("/reachout", async (req, res) => {
     }
 
     scheduleReachoutJob(
+      account,
       email,
       keyword,
       question,
