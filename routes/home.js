@@ -2,18 +2,22 @@ import express from "express";
 import dotenv from "dotenv";
 import { Flow } from "../models/Flow.js";
 import { jobQueue, scheduleReachoutJob } from "../utils/JobQueue.js";
+import { createAndShareSheet, updateGoogleSheet } from "../utils/google_actions.js";
 
 dotenv.config();
 const router = express.Router();
 
 router.post("/reachout", async (req, res) => {
   try {
-    const { account, email, keyword, question, targetAmountResponse } = req.body;
-    let flow = await Flow.findOne({ account, email, keyword, question });
+    const { account, name, email, keyword, question, targetAmountResponse } = req.body;
+    let flow = await Flow.findOne({ account, name, email, keyword, question });
     if (flow === null) {
+      const sheetName = `${name}'s SurveyBara`
+      const sheetId = await createAndShareSheet(sheetName, email, question, targetAmountResponse)
       flow = new Flow({
-        account,
+        name,
         email,
+        sheetId,
         keyword,
         question,
         targetAmountResponse,
@@ -21,8 +25,8 @@ router.post("/reachout", async (req, res) => {
       });
       await flow.save();
     }
+
     scheduleReachoutJob(
-      account,
       email,
       keyword,
       question,
@@ -74,6 +78,9 @@ router.post("/record-response", async (req, res) => {
       }
     });
     await flow.save();
+    const sheetId = flow.sheetId
+    const rowData = [name, linkedinUrl, response]; //hugo how do we make sure response is good? so record-response route should be called after llm validate if the response is good?
+    await updateGoogleSheet({sheetId, rowData});
     return res.status(200).send("Response recorded");
   } catch (error) {
     console.log(error);
@@ -116,5 +123,29 @@ router.get("/jobs-queued", async (req, res) => {
     return res.status(400).send("Something went wrong");
   }
 });
+
+// router.post("/zapier-hook", async (req, res) => {
+//   console.log('zapier has called this route')
+//   try {
+//     // Extract data from the request body
+//     const { id, sheet_url } = req.body; // Adjust these fields based on what you're sending from Zapier
+//     console.log('Data: ', req.body)
+    
+//     // Send a success response back to Zapier
+//     res.status(200).json({ message: "Data received and recorded successfully" });
+    
+//     // Perform your database operation here
+//     const flow = await Flow.findById(id);
+//     if (!flow) {
+//       return res.status(404).json({ message: "This outreach flow not found" });
+//     }
+//     flow.sheetUrl = sheet_url;
+//     await flow.save();
+//   } catch (error) {
+//     console.error("Error saving data from Zapier:", error);
+//     console.log("Error saving data from Zapier:", error);
+//     res.status(500).json({ message: "Failed to record data" });
+//   }
+// });
 
 export default router;

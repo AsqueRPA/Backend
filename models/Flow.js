@@ -12,6 +12,13 @@ const FlowSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  sheetId: {
+    type: String,  
+  },
+  name: {
+    type: String,
+    required: true,
+  },
   keyword: {
     type: String,
     required: true,
@@ -33,6 +40,9 @@ const FlowSchema = new mongoose.Schema({
       name: {
         type: String,
         required: true,
+      },
+      LinkedinUrl: {
+        type: String,
       },
       response: {
         type: String,
