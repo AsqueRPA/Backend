@@ -2,7 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import { Flow } from "../models/Flow.js";
 import { jobQueue, scheduleReachoutJob } from "../utils/JobQueue.js";
-import { createGoogleSheet, updateGoogleSheet } from "../google_actions.js";
+import { createAndShareSheet, updateGoogleSheet } from "../google_actions.js";
 
 dotenv.config();
 const router = express.Router();
@@ -13,7 +13,7 @@ router.post("/reachout", async (req, res) => {
     let flow = await Flow.findOne({ account, name, email, keyword, question });
     if (flow === null) {
       const sheetName = `${name}'s SurveyBara`
-      const sheetId = await createGoogleSheet(sheetName, email, question, targetAmountResponse)
+      const sheetId = await createAndShareSheet(sheetName, email, question, targetAmountResponse)
       flow = new Flow({
         name,
         email,
