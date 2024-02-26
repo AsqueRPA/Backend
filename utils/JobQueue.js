@@ -102,12 +102,12 @@ function scheduleReplyJob(account, email, keyword, question, delay) {
         .finished()
         .then(async () => {
           console.log(`Reply job ${job.id} completed`);
-          const flow = await Flow.findOne({ email, keyword, question });
+          const flow = await Flow.findOne({ account, email, keyword, question });
           if (
             flow.reachouts.filter((reachout) => reachout.response).length <
             flow.targetAmountResponse
           ) {
-            scheduleReachoutJob(email, keyword, question, flow.targetAmountResponse, flow.lastPage);
+            scheduleReachoutJob(account, email, keyword, question, flow.targetAmountResponse, flow.lastPage);
           }
         })
         .catch((error) => {
@@ -124,7 +124,7 @@ function scheduleReachoutJob(account, email, keyword, question, targetAmountResp
         .finished()
         .then(async () => {
           console.log(`Reachout job ${job.id} completed`);
-          scheduleReplyJob(email, keyword, question, 3000);
+          scheduleReplyJob(account, email, keyword, question, 3000);
         })
         .catch((error) => {
           console.error(`Reachout job ${job.id} failed`, error);

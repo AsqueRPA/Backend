@@ -15,6 +15,7 @@ router.post("/reachout", async (req, res) => {
       const sheetName = `${name}'s SurveyBara`
       const sheetId = await createAndShareSheet(sheetName, email, question, targetAmountResponse)
       flow = new Flow({
+        account,
         name,
         email,
         sheetId,
