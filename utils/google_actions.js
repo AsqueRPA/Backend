@@ -11,32 +11,13 @@ const SCOPES = [
 const TOKEN_PATH = "token.json";
 
 async function authorize() {
-  const content = {
-    installed: {
-      client_id: process.env.GOOGLE_CLIENT_ID,
-      project_id: process.env.GOOGLE_PROJECT_ID,
-      auth_uri: "https://accounts.google.com/o/oauth2/auth",
-      token_uri: "https://oauth2.googleapis.com/token",
-      auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs",
-      client_secret: process.env.GOOGLE_CLIENT_SECRET,
-      redirect_uris: ["http://localhost", ""],
-    },
-  };
-  const credentials = JSON.parse(content);
-  const { client_secret, client_id, redirect_uris } = credentials.installed;
   const oAuth2Client = new google.auth.OAuth2(
-    client_id,
-    client_secret,
-    redirect_uris[0]
+    process.env.GOOGLE_OAUTH_CLIENT_ID,
+    process.env.GOOGLE_OAUTH_CLIENT_SECRET,
+    ""
   );
-
-  try {
-    const token = await fs.readFile(TOKEN_PATH);
-    oAuth2Client.setCredentials(JSON.parse(token));
-  } catch (error) {
-    await getNewToken(oAuth2Client);
-  }
-
+  const token = JSON.parse(process.env.GOOGLE_TOKEN);
+  oAuth2Client.setCredentials(token);
   return oAuth2Client;
 }
 
