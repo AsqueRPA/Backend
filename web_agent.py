@@ -329,7 +329,7 @@ class WebAgent:
                     name = data["record response"]["name"]
                     response = data["record response"]["response"]
                     print(f"Recording response for {name}: {response}")
-                    url = "http://localhost/record-response"
+                    url = f"http://localhost:{port}/record-response"
 
                     data = {
                         "account": account,
