@@ -93,7 +93,7 @@ router.post("/record-response", async (req, res) => {
     await flow.save();
     const sheetId = flow.sheetId;
     const rowData = [name, linkedinUrl, response]; //hugo how do we make sure response is good? so record-response route should be called after llm validate if the response is good?
-    await updateGoogleSheet({ sheetId, rowData });
+    await updateGoogleSheet(rowData, sheetId);
     return res.status(200).send("Response recorded");
   } catch (error) {
     console.log(error);
