@@ -62,7 +62,7 @@ class WebAgent:
             {"record reachout": {"email": "Email", "keyword": "Keyword", "question": "Question", "name": "Name of the reachout"}}
 
             You can delete the reachout by answering with the following JSON format:
-            {"delete reachout": {"email": "Email", "keyword": "Keyword", "question": "Question", "name": "Name of the reachout"}}
+            {"delete reachout": {"account": "Account", "email": "Email", "keyword": "Keyword", "question": "Question", "name": "Name of the reachout"}}
 
             You can record the response by answering with the following JSON format:
             {"record response": {"account": "Account", "email": "Email", "keyword": "Keyword", "question": "Question", "name": "Name of the reachout", "response": "Response"}}
@@ -345,6 +345,7 @@ class WebAgent:
                     print(response.status_code)
                     print(response.text)
                 elif "record reachout" in data:
+                    account = data["record reachout"]["account"]
                     email = data["record reachout"]["email"]
                     keyword = data["record reachout"]["keyword"]
                     question = data["record reachout"]["question"]
@@ -354,6 +355,7 @@ class WebAgent:
                     )
                     url = f"http://localhost:{port}/record-reachout"
                     data = {
+                        "account": account,
                         "email": email,
                         "keyword": keyword,
                         "question": question,
@@ -363,6 +365,7 @@ class WebAgent:
                     print(response.status_code)
                     print(response.text)
                 elif "delete reachout" in data:
+                    account = data["record reachout"]["account"]
                     email = data["delete reachout"]["email"]
                     keyword = data["delete reachout"]["keyword"]
                     question = data["delete reachout"]["question"]
@@ -372,6 +375,7 @@ class WebAgent:
                     )
                     url = f"http://localhost:{port}/delete-reachout"
                     data = {
+                        "account": account,
                         "email": email,
                         "keyword": keyword,
                         "question": question,
