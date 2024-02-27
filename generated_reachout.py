@@ -133,7 +133,7 @@ async def main():
                         await page.wait_for_timeout(random.randint(2000, 5000))
                         await agent.process_page()
                         await agent.chat(
-                            f"In the 'Add a note' text box, within 300 characters, write a quick introduction and ask the question: {question}, don't include any placeholder text, this will be the message sent to the recipient. somtimes you might accidentally select the search bar (usually with ID 13), usually the textbox has a smaller ID, such as 5. Don't do anything else because it will disrupt the next step. If there is text in the textbox already, it means you have already filled in the message, don't try to fill in the message again"
+                            f"In the 'Add a note' text box, within 300 characters, write a quick introduction including the person's name if possible and ask the question: {question}, don't include any placeholder text, this will be the message sent to the recipient. somtimes you might accidentally select the search bar (usually with ID 13), usually the textbox has a smaller ID, such as 5. Don't do anything else because it will disrupt the next step. If there is text in the textbox already, it means you have already filled in the message, don't try to fill in the message again"
                         )
                         await page.wait_for_timeout(random.randint(2000, 5000))
                         await page.click(

@@ -129,7 +129,7 @@ router.post("/update-last-page", async (req, res) => {
 
 router.get("/jobs-queued", async (req, res) => {
   try {
-    const jobs = await jobQueue.getJobs(["waiting", "delayed"]);
+    const jobs = await jobQueue.getJobs(["waiting", "delayed", "active"]);
     return res.status(200).send({ jobsQueued: jobs.length });
   } catch (error) {
     console.log(error);
