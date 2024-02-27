@@ -115,15 +115,21 @@ async def main():
                 except Exception as e:
                     print(e)
                     continue
-                buttons = await page.query_selector_all(f'[aria-label="Invite {name} to connect"]')
-                button_clicked = False
-                for button in buttons:
+                more_actions_buttons = await page.query_selector_all(f'[aria-label="More actions"]')
+                for more_action_button in more_actions_buttons:
                     try:
-                        await button.click(timeout=5000)
-                        button_clicked = True
+                        await more_action_button.click(timeout=5000)
                     except Exception as e:
                         print(e)
-                if button_clicked:
+                connect_buttons = await page.query_selector_all(f'[aria-label="Invite {name} to connect"]')
+                connect_button_clicked = False
+                for connect_button in connect_buttons:
+                    try:
+                        await connect_button.click(timeout=5000)
+                        connect_button_clicked = True
+                    except Exception as e:
+                        print(e)
+                if connect_button_clicked:
                     try:
                         await page.wait_for_timeout(random.randint(2000, 5000))
                         await page.wait_for_selector(
@@ -133,7 +139,7 @@ async def main():
                         await page.wait_for_timeout(random.randint(2000, 5000))
                         await agent.process_page()
                         await agent.chat(
-                            f"In the 'Add a note' text box, within 250 characters, write a quick introduction including the person's name if possible and ask the question: {question}, don't include any placeholder text, this will be the message sent to the recipient. somtimes you might accidentally select the search bar (usually with ID 13), usually the textbox has a smaller ID, such as 5. Don't do anything else because it will disrupt the next step. If there is text in the textbox already, it means you have already filled in the message, don't try to fill in the message again"
+                            f"In the 'Add a note' text box, within 250 characters, write a quick introduction including the person's name if possible and ask the question: {question}, be concise, don't include any placeholder text, this will be the message sent to the recipient. somtimes you might accidentally select the search bar (usually with ID 13), usually the textbox has a smaller ID, such as 5. Don't do anything else because it will disrupt the next step. If there is text in the textbox already, it means you have already filled in the message, don't try to fill in the message again"
                         )
                         await page.wait_for_timeout(random.randint(2000, 5000))
                         await page.click(

@@ -32,7 +32,7 @@ async def main():
         )
 
         page = await browser.new_page()
-        await page.goto("https://www.linkedin.com/in/jameslabastida/")
+        await page.goto("https://www.linkedin.com/in/anupamrecruit/")
         agent = WebAgent(page)
 
         start_time = time.time()  # capture the start time
@@ -58,16 +58,21 @@ async def main():
             await page.wait_for_timeout(5000)
         except Exception as e:
             print(e)
-
-        buttons = await page.query_selector_all(f'[aria-label="Invite {name} to connect"]')
-        button_clicked = False
-        for button in buttons:
+        more_actions_buttons = await page.query_selector_all(f'[aria-label="More actions"]')
+        for more_action_button in more_actions_buttons:
             try:
-                await button.click(timeout=5000)
-                button_clicked = True
+                await more_action_button.click(timeout=5000)
             except Exception as e:
                 print(e)
-        if button_clicked:
+        connect_buttons = await page.query_selector_all(f'[aria-label="Invite {name} to connect"]')
+        connect_button_clicked = False
+        for connect_button in connect_buttons:
+            try:
+                await connect_button.click(timeout=5000)
+                connect_button_clicked = True
+            except Exception as e:
+                print(e)
+        if connect_button_clicked:
             await page.wait_for_selector(
                 '[aria-label="Add a note"]', timeout=5000
             )
