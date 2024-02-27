@@ -112,19 +112,19 @@ async def main():
                         "h1.text-heading-xlarge.inline.t-24.v-align-middle.break-words",
                         timeout=5000,
                     )
-                    await page.wait_for_timeout(5000)
-                    connect_button = await page.query_selector(
-                        "button.artdeco-button.artdeco-button--2.artdeco-button--primary.ember-view.pvs-profile-actions__action"
-                    )
                 except Exception as e:
                     print(e)
                     continue
-                if (
-                    connect_button
-                    and (await connect_button.text_content()).strip() == "Connect"
-                ):
+                buttons = await page.query_selector_all(f'[aria-label="Invite {name} to connect"]')
+                button_clicked = False
+                for button in buttons:
                     try:
-                        await connect_button.click(timeout=5000)
+                        await button.click(timeout=5000)
+                        button_clicked = True
+                    except Exception as e:
+                        print(e)
+                if button_clicked:
+                    try:
                         await page.wait_for_timeout(random.randint(2000, 5000))
                         await page.wait_for_selector(
                             '[aria-label="Add a note"]', timeout=5000

@@ -1,35 +1,78 @@
-import re
-import json
+import asyncio
+import math
+from web_agent import WebAgent
+from playwright.async_api import async_playwright
+import argparse
+from urllib.parse import quote
+import requests
+import os
+from dotenv import load_dotenv
+import random
+from send_email import send_email
+import time
 
-bruh = """Certainly, I can attempt to click on the link associated with "Saint Ze Yu". If the first attempt doesn't work as instructed, I will try clicking again.
+load_dotenv()
 
-Here is the action to click on the person labeled as '0':
+port = os.getenv("PORT")
 
-```json
-{"click": 31}
-```
 
-If this does not work, I will attempt to click again:
+async def main():
+    async with async_playwright() as p:
+        # Local browser
+        executablePath = (
+            "/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary"
+        )
 
-```json
-{"click": 31}
-```"""
+        userDataDir = "/Users/hugozhan/Library/Application Support/Google/Chrome Canary"
 
-def extract_json(message):
-    # Adjusted regex to capture from the first '{' to the last '}'
-    json_regex = r"\{[\s\S]*\}"
-    matches = re.findall(json_regex, message)
+        browser = await p.chromium.launch_persistent_context(
+            executable_path=executablePath,
+            user_data_dir=userDataDir,
+            headless=False,
+        )
 
-    if matches:
+        page = await browser.new_page()
+        await page.goto("https://www.linkedin.com/in/jameslabastida/")
+        agent = WebAgent(page)
+
+        start_time = time.time()  # capture the start time
         try:
-            # Assuming the first match is the JSON we want
-            json_data = json.loads(matches[0])
-            return json_data
-        except json.JSONDecodeError as e:
-            print(f"Error decoding JSON: {e}")
-            return {}
-    else:
-        print("No JSON found in the message")
-        return {}
-        
-print(extract_json(bruh))
+            person_selector = f"//li[contains(@class, 'reusable-search__result-container')][{i+1}]"
+            await page.wait_for_selector(person_selector, timeout=5000)
+            await page.click(person_selector, force=True, timeout=5000)
+            await page.wait_for_selector(
+                "div.pv-top-card-v2-ctas", timeout=5000
+            )
+        except Exception as e:
+            print(e)
+            await page.mouse.click(0, 0)
+        try:
+            await page.wait_for_selector(
+                "h1.text-heading-xlarge.inline.t-24.v-align-middle.break-words",
+                timeout=5000,
+            )
+            name = await page.text_content(
+                "h1.text-heading-xlarge.inline.t-24.v-align-middle.break-words",
+                timeout=5000,
+            )
+            await page.wait_for_timeout(5000)
+        except Exception as e:
+            print(e)
+
+        buttons = await page.query_selector_all(f'[aria-label="Invite {name} to connect"]')
+        button_clicked = False
+        for button in buttons:
+            try:
+                await button.click(timeout=5000)
+                button_clicked = True
+            except Exception as e:
+                print(e)
+        if button_clicked:
+            await page.wait_for_selector(
+                '[aria-label="Add a note"]', timeout=5000
+            )
+            await page.click('[aria-label="Add a note"]', timeout=5000)
+
+
+asyncio.run(main())
+
