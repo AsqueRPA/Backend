@@ -365,7 +365,7 @@ class WebAgent:
                     print(response.status_code)
                     print(response.text)
                 elif "delete reachout" in data:
-                    account = data["record reachout"]["account"]
+                    account = data["delete reachout"]["account"]
                     email = data["delete reachout"]["email"]
                     keyword = data["delete reachout"]["keyword"]
                     question = data["delete reachout"]["question"]
