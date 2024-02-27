@@ -72,7 +72,6 @@ async def main():
                 await agent.process_page()
                 await agent.chat(
                     f"""
-                    DO THESE ONLY IF THERE ARE MESSAGES IN THE INBOX AND CHAT:
                         1. If the person doesn't have a response to the question, delete the reachout with account: {account}, email: {email}, keyword: {keyword}, question: {question}, name: {person}
                         2. If the person has a response to the question, record the response with account: {account}, email: {email}, keyword: {keyword}, question: {question}, name: {person}, response: {person}'s response
                     """
