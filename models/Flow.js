@@ -41,7 +41,7 @@ const FlowSchema = new mongoose.Schema({
         type: String,
         required: true,
       },
-      LinkedinUrl: {
+      linkedinUrl: {
         type: String,
       },
       response: {
