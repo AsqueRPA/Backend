@@ -140,7 +140,7 @@ async def main():
                             ".artdeco-button.artdeco-button--2.artdeco-button--primary.ember-view.ml1",
                             timeout=5000,
                         )
-                        linkedinUrl = await page.url()
+                        linkedinUrl = page.url
                         url = f"http://localhost:{port}/record-reachout"
                         data = {
                             "account": account,
