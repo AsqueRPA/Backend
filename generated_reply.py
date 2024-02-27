@@ -72,6 +72,7 @@ async def main():
                 await agent.process_page()
                 await agent.chat(
                     f"""
+                    YOU HAVE TO EITHER DELETE THE REACHOUT OR RECORD THE RESPONSE OF THE REACHOUT
                         1. If the person doesn't have a response or the response doesn't answer the question, delete the reachout with account: {account}, email: {email}, keyword: {keyword}, question: {question}, name: {person}
                         2. If the person has a response to the question, record the response with account: {account}, email: {email}, keyword: {keyword}, question: {question}, name: {person}, response: {person}'s response
                     """
