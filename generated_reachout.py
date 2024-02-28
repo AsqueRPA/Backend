@@ -86,8 +86,8 @@ async def main():
                 )
             except Exception as e:
                 print(e)
-                await page.screenshot(path="screenshot.png")
-                send_email("hugozhan0802@gmail.com", "Error", str(e), "screenshot.png")
+                await page.screenshot(path="screenshot.jpg")
+                send_email("hugozhan0802@gmail.com", "Error", str(e), "screenshot.jpg")
                 break
             for i in range(10):
                 start_time = time.time()  # capture the start time
@@ -202,4 +202,4 @@ try:
     asyncio.run(main())
 except Exception as e:
     print(e)
-    send_email("hugozhan0802@gmail.com", "Error", str(e), "screenshot.png")
+    send_email("hugozhan0802@gmail.com", "Error", str(e), "screenshot.jpg")
