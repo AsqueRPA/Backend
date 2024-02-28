@@ -1,5 +1,4 @@
 import asyncio
-import math
 from web_agent import WebAgent
 from playwright.async_api import async_playwright
 import argparse
@@ -10,6 +9,7 @@ from dotenv import load_dotenv
 import random
 from send_email import send_email
 import time
+import html
 
 load_dotenv()
 
@@ -112,17 +112,17 @@ async def main():
                         "h1.text-heading-xlarge.inline.t-24.v-align-middle.break-words",
                         timeout=5000,
                     )
+                    more_actions_buttons = await page.query_selector_all(f'[aria-label="More actions"]')
+                    for more_action_button in more_actions_buttons:
+                        try:
+                            await more_action_button.click(timeout=5000)
+                        except Exception as e:
+                            print(e)
+                    connect_buttons = await page.query_selector_all(f'[aria-label="Invite {html.escape(name)} to connect"]')
+                    connect_button_clicked = False
                 except Exception as e:
                     print(e)
                     continue
-                more_actions_buttons = await page.query_selector_all(f'[aria-label="More actions"]')
-                for more_action_button in more_actions_buttons:
-                    try:
-                        await more_action_button.click(timeout=5000)
-                    except Exception as e:
-                        print(e)
-                connect_buttons = await page.query_selector_all(f'[aria-label="Invite {name} to connect"]')
-                connect_button_clicked = False
                 for connect_button in connect_buttons:
                     try:
                         await connect_button.click(timeout=5000)
