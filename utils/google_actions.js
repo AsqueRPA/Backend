@@ -58,16 +58,16 @@ async function createAndShareSheetHelper(auth, sheetName, email, question) {
     `Created Sheet "${sheetName}" with ID: ${sheetId}, and the url is https://docs.google.com/spreadsheets/d/${sheetId}`
   );
 
-  // Share the Google Sheet with the specified email as an editor
-  const drive = google.drive({ version: "v3", auth });
-  await drive.permissions.create({
-    fileId: sheetId,
-    requestBody: {
-      type: "user",
-      role: "writer", // 'writer' permission allows the user to edit the sheet
-      emailAddress: email, // The email address of the user to share with
-    },
-  });
+  // // Share the Google Sheet with the specified email as an editor
+  // const drive = google.drive({ version: "v3", auth });
+  // await drive.permissions.create({
+  //   fileId: sheetId,
+  //   requestBody: {
+  //     type: "user",
+  //     role: "writer", // 'writer' permission allows the user to edit the sheet
+  //     emailAddress: email, // The email address of the user to share with
+  //   },
+  // });
 
   console.log(`Sheet "${sheetName}" shared with ${email} as an editor.`);
 

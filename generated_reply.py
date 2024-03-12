@@ -27,26 +27,26 @@ async def main():
         question = parser.parse_args().q
         reachouts = parser.parse_args().r
 
-        # # Local browser
-        # executablePath = (
-        #     "/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary"
-        # )
+        # Local browser
+        executablePath = (
+            "/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary"
+        )
 
-        # userDataDir = "/Users/hugozhan/Library/Application Support/Google/Chrome Canary"
+        userDataDir = "/Users/hugozhan/Library/Application Support/Google/Chrome Canary"
 
-        # browser = await p.chromium.launch_persistent_context(
-        #     executable_path=executablePath,
-        #     user_data_dir=userDataDir,
-        #     headless=False,
-        # )
-
-        # Remote browser
-        userDataDir = "/home/ubuntu/.mozilla/firefox/96tbgq4x.default-release"
-
-        browser = await p.firefox.launch_persistent_context(
-            userDataDir,
+        browser = await p.chromium.launch_persistent_context(
+            executable_path=executablePath,
+            user_data_dir=userDataDir,
             headless=False,
         )
+
+        # # Remote browser
+        # userDataDir = "/home/ubuntu/.mozilla/firefox/96tbgq4x.default-release"
+
+        # browser = await p.firefox.launch_persistent_context(
+        #     userDataDir,
+        #     headless=False,
+        # )
 
         page = await browser.new_page()
         agent = WebAgent(page)
@@ -73,8 +73,8 @@ async def main():
                 await agent.chat(
                     f"""
                     YOU HAVE TO EITHER DELETE THE REACHOUT OR RECORD THE RESPONSE OF THE REACHOUT, DONT USE ELEMENT NOT PRESENT
-                        1. If the person doesn't have a response or the response doesn't answer the question, delete the reachout with account: {account}, email: {email}, keyword: {keyword}, question: {question}, name: {person}
-                        2. If the person has a response to the question, record the response with account: {account}, email: {email}, keyword: {keyword}, question: {question}, name: {person}, response: {person}'s response
+                        1. If the person doesn't have a response or the response is not related to the question, delete the reachout with account: {account}, email: {email}, keyword: {keyword}, question: {question}, name: {person}
+                        2. If the person has a response to the question, even if it doesnt answer the question fully, record the response with account: {account}, email: {email}, keyword: {keyword}, question: {question}, name: {person}, response: {person}'s response
                     """
                 )
 
