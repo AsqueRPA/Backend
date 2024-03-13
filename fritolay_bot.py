@@ -51,17 +51,39 @@ if the full name is Cheetos Crunchy - Cheddar Jalapeno - 3.25 oz, you can try th
 
     # return 2
 
-    item_dict = {}
-    i = 2
-    while True:
-        try:
-            item_div = await page.query_selector(
-                f".MuiGrid-root-128.product-tile.MuiGrid-item-130.MuiGrid-grid-xs-6-168.MuiGrid-grid-sm-4-180.MuiGrid-grid-md-4-194.MuiGrid-grid-lg-3-207:nth-of-type({i}) .productlist-img"
-            )
-            print(item_div)
-            await item_div.click()
-            response = await joshyTrain.chat(
-                f"""
+    card_text_map = {}
+    card_titles = await page.query_selector_all(".pro-list-title-mob")
+    for index, card_title in enumerate(card_titles):
+        await card_title.click()
+        await page.wait_for_selector(".product-title", state="visible")
+        modal_text = await page.inner_text(".product-title")
+        card_text_map[index] = modal_text
+        await page.click('[aria-label="close"]')
+        await page.wait_for_timeout(
+            2000
+        )  # Wait for the modal to close, adjust as needed
+
+    if len(card_text_map) == 0:
+        if len(search_terms) <= minimum_search_terms:
+            return await search(page, item_name, search_terms)
+        else:
+            search_terms = []
+            return 0
+
+    prompt = f"""
+    given a python dict, please return the key where the value of this key is {item_name} in the {card_text_map}. 
+    Respond with the following JSON format:
+    {{"index": "the index of the item that matches {item_name}"}}
+    """
+    response = await joshyTrain.chat(prompt)
+    data = joshyTrain.extract_json(response)
+    i = int(data["index"]) + 2
+    item_div = await page.query_selector(
+        f".MuiGrid-root-128.product-tile.MuiGrid-item-130.MuiGrid-grid-xs-6-168.MuiGrid-grid-sm-4-180.MuiGrid-grid-md-4-194.MuiGrid-grid-lg-3-207:nth-of-type({i}) .productlist-img"
+    )
+    await item_div.click()
+    response = await joshyTrain.chat(
+        f"""
 give your confidence level on this current item being the item, {item_name}, that we are looking for from 0-10, which is your combined score from the following criteria:
 
 the brand name:
@@ -90,41 +112,21 @@ the packaging:
 
 Add the score up and return the following JSON format:
 {{
-"index": {i}
 "confidence": "your combined confidence level",
 "reasoning": "your reasoning"
 }}
 """
-            )
-            data = joshyTrain.extract_json(response)
-            if data and "confidence" in data:
-
-                item_dict[i] = data
-            close_icon = await page.query_selector(
-                'img[src="a8d398bb099ac1e54d401925030b9aa2.svg"]'
-            )
-            await close_icon.click()
-            if int(data["confidence"]) == 10:
-                return i
-        except Exception as e:
-            print("Finished eval")
-            break
-        i += 1
-    sorted_items = sorted(
-        item_dict.items(), key=lambda item: -int(item[1]["confidence"])
     )
-
-    if len(sorted_items) == 0:
-        if len(search_terms) <= minimum_search_terms:
-            return await search(page, item_name, search_terms)
-        else:
-            search_terms = []
-            return 0
-    elif int(sorted_items[0][1]["confidence"]) <= minimum_confidence:
+    close_icon = await page.query_selector(
+        'img[src="a8d398bb099ac1e54d401925030b9aa2.svg"]'
+    )
+    await close_icon.click()
+    data = joshyTrain.extract_json(response)
+    if int(data["confidence"]) <= minimum_confidence:
         return await search(page, item_name, search_terms)
     else:
         search_terms = []
-        return sorted_items[0][0]
+        return i
 
 
 async def main():

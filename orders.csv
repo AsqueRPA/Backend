@@ -1,6 +1,6 @@
 product_name,supplier_name,total_packs_ordered,pack_size,pack_price,PO_cost,total_packs_received,receipt_pack_price,received_cost,upc,store_id,store_name,product_id,restock_order_id,is_out_of_stock,out_of_stock_reason
 Funyuns - Original - 2.125 oz,Frito Lay,3,1,1.88,5.64,,,,,2,USC,1956,13421,FALSE,
-,Frito Lay,3,1,1.88,5.64,,,,,2,USC,2823,13421,FALSE,
+Cheetos Crunchy - Cheddar Jalapeno - 3.25 oz,Frito Lay,3,1,1.88,5.64,,,,,2,USC,2823,13421,FALSE,
 Cheetos Flavor Shots - Flamin Hot Asteroids - 1.25 oz,Frito Lay,1,6,6.24,6.24,,,,28400211772,2,USC,6583,13421,FALSE,
 Munchies - Flamin' Hot - 8.0 oz,Frito Lay,21,1,2.78,58.38,,,,28400084055,2,USC,128,13421,FALSE,
 Chester's Fries - Flamin' Hot - 2.625 oz,Frito Lay,17,1,1.91,32.47,,,,28400336256,2,USC,35,13421,FALSE,
