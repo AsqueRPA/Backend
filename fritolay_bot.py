@@ -23,6 +23,7 @@ if the full name is Cheetos Crunchy - Cheddar Jalapeno - 3.25 oz, you can try th
 - Cheddar Jalapeno
 - Cheetos
 - MAKE SURE TO ALSO TRY OTHER COMBINATION OF THE WORDS OR JUST THE BRAND NAME AS WELL
+DON'T include the size when you are searching
 """
     while True:
         try:
@@ -86,7 +87,7 @@ if the full name is Cheetos Crunchy - Cheddar Jalapeno - 3.25 oz, you can try th
         )
         await item_div.click()
     except Exception as e:
-        if len(search_terms) <= minimum_search_terms:
+        if len(search_terms) < minimum_search_terms:
             return await search(page, item_name, search_terms)
         else:
             return 0
@@ -116,8 +117,8 @@ the size:
 - 0pt if the size is not close to the correct size
 
 the packaging:
-- 1pt if the packaging is correct, for example, if the item name is Cheetos Crunchy - Cheddar Jalapeno, then the packaging should be green and yellow
-- 0pt if the packaging is not correct, for example, if the item name is Cheetos Crunchy - Cheddar Jalapeno, then the packaging should not be red and blue
+- 1pt if the packaging seems correct
+- 0pt if the packaging is completely off
 
 Add the score up and return the following JSON format:
 {{
