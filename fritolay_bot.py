@@ -29,9 +29,8 @@ if the full name is Cheetos Crunchy - Cheddar Jalapeno - 3.25 oz, you can try th
             response = await joshyTrain.chat(
                 f"""{search_instruction}, DO: INPUT different search terms into the search bar for {item_name}, you have already tried {search_terms}.
 
-                Just try once and then return:
-                1. If you end up finding the product, then you don't need to do anything else and just return 'product found', NEVER DO THIS WHEN THE PAGE SAIDS "No Record Found"
-                2. otherwise return the searchTerm in the format {{"searchTerm": "exact search term you put as the input", "itemsFound": "yes" or "no"}} when you don't find the product or the product page is empty
+                Just try once and then return the following JSON format: 
+                {{"searchTerm": "exact search term you put as the input", "itemsFound": "yes" or "no"}}
 
                 the above is your ONLY OPTION AFTER ATTEMPTING TO INPUT INTO THE SEARCH BAR, never output {{"searchTerm": "exact search term you put as the input", "itemsFound": "yes" or "no"}} if you haven't outputted {{"input": {{"select": "ID", "text": "exact search term you put as the input"}}}}
 
