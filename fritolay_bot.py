@@ -23,7 +23,7 @@ if the full name is Cheetos Crunchy - Cheddar Jalapeno - 3.25 oz, you can try th
 - Cheddar Jalapeno
 - Cheetos
 - MAKE SURE TO ALSO TRY OTHER COMBINATION OF THE WORDS OR JUST THE BRAND NAME AS WELL
-DON'T include the size when you are searching
+DON'T include the size when you are searching, the ID for the search bar is usually close to 15
 """
     while True:
         try:
