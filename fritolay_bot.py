@@ -45,7 +45,7 @@ if the full name is Cheetos Crunchy - Cheddar Jalapeno - 3.25 oz, you can try th
             break
 
     # # Manual Search
-    # await page.get_by_placeholder("Search Product").fill("funyuns")
+    # await page.get_by_placeholder("Search Product").fill("Cheetos")
     # await page.keyboard.press("Enter")
     # await page.wait_for_timeout(5000)
 
@@ -62,19 +62,45 @@ if the full name is Cheetos Crunchy - Cheddar Jalapeno - 3.25 oz, you can try th
             await item_div.click()
             response = await joshyTrain.chat(
                 f"""
-give your confidence level on this current item being the item, {item_name}, that we are looking for, 0-10, 10 being 100% confident, 0 being no confidence at all.
-consider the packaging, the name, the brand, the flavor, the size, and all other information you can get from the item details pop up to help you make this rating
-For example you should have low confidence that Cheetos Crunchy - Cheddar Jalapeno - 3.25 oz and Cheetos Crunchy Cheese Flavored Snacks are the same thing
-respond in the following JSON format:
+give your confidence level on this current item being the item, {item_name}, that we are looking for from 0-10, which is your combined score from the following criteria:
+
+the brand name:
+- 1pt if the brand name is in the item name
+- 0pt if the brand name is not in the item name
+
+the product name:
+- 2pts if the product name is exactly correct 
+- 1pt if the product name is close to the correct product name, for example, if the item name is Cheetos Crunchy - Cheddar Jalapeno - 3.25 oz, then Cheetos is close to the correct product name (Cheetos Crunchy is the correct product name)
+- 0pt if the product name is not close to the correct product name
+
+the flavor:
+- 2pts if the flavor is exactly correct 
+- 1pt if the flavor is close to the correct flavor, for example, if the item name is Cheetos Crunchy - Cheddar Jalapeno - 3.25 oz, then Jalapeno or Cheddar is close to the correct flavor (Cheddar Jalapeno is the correct flavor)
+- 0pt if the flavor is not close to the correct flavor
+
+the size:
+- 2pts if the size is exactly correct 
+- 1pt if the size is close to the correct size, for example, if the item name is 3.25 oz, then 3 oz or 4 oz is close to the correct size
+- 0pt if the size is not close to the correct size
+
+rest of the 3 pts:
+- Use all other information that is available on the page to give a score from 0-3, 
+for example, if the product is Cheetos Crunchy - Cheddar Jalapeno, then you know the packaging is traditionally yellow and green,
+whereas if the product was the Flaming Hot version, then the packaging would be red and yellow.
+packaging is just an example, you can use any other information that is available on the page to give a score from 0-3
+
+Add the score up and return the following JSON format:
 {{
 "index": {i}
-"confidence": "your confidence level",
+"confidence": "your combined confidence level",
 "reasoning": "your reasoning"
 }}
 """
             )
             data = joshyTrain.extract_json(response)
             if data and "confidence" in data:
+                if int(data["confidence"]) == 10:
+                    return i
                 item_dict[i] = data
             close_icon = await page.query_selector(
                 'img[src="a8d398bb099ac1e54d401925030b9aa2.svg"]'
