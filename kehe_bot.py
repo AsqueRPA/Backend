@@ -139,29 +139,19 @@ Add the score up and return the following JSON format:
 
 async def main():
     async with async_playwright() as p:
-        # Initialize the parser
-        parser = argparse.ArgumentParser()
-
-        # Add parameters
-        parser.add_argument("-f", type=str)
-
-        # Parse the arguments
-        file = parser.parse_args().f
-
         browser = await p.chromium.launch(headless=False, slow_mo=50)
 
         page = await browser.new_page()
         ## LOGGING IN
-        await page.goto("https://shop.fls2u.com/login")
+        await page.goto("https://connectretailer.kehe.com/")
         await page.wait_for_timeout(5000)
-        await page.get_by_text("Accept All Cookies", exact=True).click()
-        await page.get_by_label("Username / Email*").click()
-        await page.get_by_label("Username / Email*").fill("jack@duffl.com")
-        await page.get_by_label("Password*").click()
-        await page.get_by_label("Password*").fill("dufflucsb2021")
-        await page.get_by_label("login", exact=True).click()
+        await page.get_by_placeholder("e.g. contact@email.com").fill("batu@duffl.com")
+        await page.click('.btn.btn-primary.btn-medium.login-button')
+        await page.fill('#password', "dufflucla2020")
+        await page.get_by_text("Log In", exact=True).click()
 
         await page.wait_for_timeout(8000)
+        return
 
         result_rows = []
 

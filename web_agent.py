@@ -110,18 +110,23 @@ class JoshyTrain:
         self.tag_to_xpath = tag_to_xpath
         self.page_text = page_text
 
-    def extract_json(self, message):
-        json_regex = r"\{[\s\S]*\}"
-        matches = re.findall(json_regex, message)
+    def extract_json(message):
+        # Normalize newlines and remove control characters except for tab
+        normalized_message = re.sub(r'[\r\n]+', ' ', message)  # Replace newlines with spaces
+        sanitized_message = re.sub(r'[^\x20-\x7E\t]', '', normalized_message)  # Remove non-printable chars
+
+        json_regex = r"\{[\s\S]*?\}"  # Non-greedy match for content inside braces
+        matches = re.findall(json_regex, sanitized_message)
 
         if matches:
-            try:
-                # Assuming the first match is the JSON we want
-                json_data = json.loads(matches[0])
-                return json_data
-            except json.JSONDecodeError as e:
-                print(f"Error decoding JSON: {e}")
-                return {}
+            for match in matches:
+                try:
+                    json_data = json.loads(match)
+                    return json_data  # Return the first valid JSON object
+                except json.JSONDecodeError as e:
+                    print(f"Error decoding JSON: {e}")
+            print("Valid JSON not found in the matches")
+            return {}
         else:
             print("No JSON found in the message")
             return {}
