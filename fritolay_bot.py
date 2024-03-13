@@ -25,24 +25,28 @@ if the full name is Cheetos Crunchy - Cheddar Jalapeno - 3.25 oz, you can try th
 - MAKE SURE TO ALSO TRY OTHER COMBINATION OF THE WORDS OR JUST THE BRAND NAME AS WELL
 """
     while True:
-        response = await joshyTrain.chat(
-            f"""{search_instruction}, DO: INPUT different search terms into the search bar for {item_name}, you have already tried {search_terms}.
+        try:
+            response = await joshyTrain.chat(
+                f"""{search_instruction}, DO: INPUT different search terms into the search bar for {item_name}, you have already tried {search_terms}.
 
-            Just try once and then return one of the following:
-            1. If you end up finding the product, then you don't need to do anything else and just return 'product found', NEVER DO THIS WHEN THE PAGE SAIDS "No Record Found"
-            2. otherwise return the searchTerm in the format {{"searchTerm": "exact search term you put as the input"}} when you don't find the product or the product page is empty
+                Just try once and then return:
+                1. If you end up finding the product, then you don't need to do anything else and just return 'product found', NEVER DO THIS WHEN THE PAGE SAIDS "No Record Found"
+                2. otherwise return the searchTerm in the format {{"searchTerm": "exact search term you put as the input", "itemsFound": "yes" or "no"}} when you don't find the product or the product page is empty
 
-            the above is your ONLY TWO OPTIONS AFTER ATTEMPTING TO INPUT INTO THE SEARCH BAR, never output {{"searchTerm": "exact search term you put as the input"}} if you haven't outputted {{"input": {{"select": "ID", "text": "exact search term you put as the input"}}}}
+                the above is your ONLY OPTION AFTER ATTEMPTING TO INPUT INTO THE SEARCH BAR, never output {{"searchTerm": "exact search term you put as the input", "itemsFound": "yes" or "no"}} if you haven't outputted {{"input": {{"select": "ID", "text": "exact search term you put as the input"}}}}
 
-            if you don't follow the above, then the program will not work.
-            """
-        )
-        data = joshyTrain.extract_json(response)
-        if data and "searchTerm" in data:
-            search_term = data["searchTerm"]
-            search_terms.append(search_term)
-        else:
-            break
+                if you don't follow the above, then the program will not work.
+                """
+            )
+            data = joshyTrain.extract_json(response)
+            if data and "searchTerm" in data:
+                search_term = data["searchTerm"]
+                search_terms.append(search_term)
+                if str(data["itemsFound"]).lower() == "yes":
+                    break
+        except Exception as e:
+            print(e)
+            continue
 
     # # Manual Search
     # await page.get_by_placeholder("Search Product").fill("Cheetos Crunchy")
@@ -216,7 +220,7 @@ async def main():
                 if out_of_stock:
                     print("product_oos")
                     row["is_out_of_stock"] = True
-                    row["out_of_stock_reason"] = "not_found"
+                    row["out_of_stock_reason"] = "product_oos"
                 else:
                     input_element = await page.query_selector(
                         ".product-detail-wrapper .MuiInputBase-input-395.MuiOutlinedInput-input-382.MuiInputBase-inputAdornedEnd-400.MuiOutlinedInput-inputAdornedEnd-386"
