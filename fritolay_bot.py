@@ -72,18 +72,25 @@ if the full name is Cheetos Crunchy - Cheddar Jalapeno - 3.25 oz, you can try th
         else:
             return 0
 
-    prompt = f"""
-    given the python dict, please return the key where the value of this key is closest to {item_name} in the {card_text_map}. 
-    Respond with the following JSON format:
-    {{"key": "the key of the item that matches {item_name}"}}
-    """
-    response = await joshyTrain.chat(prompt)
-    data = joshyTrain.extract_json(response)
-    i = int(data["key"])
-    item_div = await page.query_selector(
-        f".MuiGrid-root-128.product-tile.MuiGrid-item-130.MuiGrid-grid-xs-6-168.MuiGrid-grid-sm-4-180.MuiGrid-grid-md-4-194.MuiGrid-grid-lg-3-207:nth-of-type({i}) .productlist-img"
-    )
-    await item_div.click()
+    try:
+        prompt = f"""
+        given the python dict, please return the key where the value of this key is closest to {item_name} in the {card_text_map}. 
+        Respond with the following JSON format:
+        {{"key": "the key of the item that matches {item_name}"}}
+        """
+        response = await joshyTrain.chat(prompt)
+        data = joshyTrain.extract_json(response)
+        i = int(data["key"])
+        item_div = await page.query_selector(
+            f".MuiGrid-root-128.product-tile.MuiGrid-item-130.MuiGrid-grid-xs-6-168.MuiGrid-grid-sm-4-180.MuiGrid-grid-md-4-194.MuiGrid-grid-lg-3-207:nth-of-type({i}) .productlist-img"
+        )
+        await item_div.click()
+    except Exception as e:
+        if len(search_terms) <= minimum_search_terms:
+            return await search(page, item_name, search_terms)
+        else:
+            return 0
+        
     response = await joshyTrain.chat(
         f"""
 give your confidence level on this current item being the item, {item_name}, that we are looking for from 0-10, which is your combined score from the following criteria:
