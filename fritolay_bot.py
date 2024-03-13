@@ -73,13 +73,13 @@ if the full name is Cheetos Crunchy - Cheddar Jalapeno - 3.25 oz, you can try th
             return 0
 
     prompt = f"""
-    given a python dict, please return the key where the value of this key is {item_name} in the {card_text_map}. 
+    given the python dict, please return the key where the value of this key is closest to {item_name} in the {card_text_map}. 
     Respond with the following JSON format:
-    {{"index": "the index of the item that matches {item_name}"}}
+    {{"key": "the key of the item that matches {item_name}"}}
     """
     response = await joshyTrain.chat(prompt)
     data = joshyTrain.extract_json(response)
-    i = int(data["index"])
+    i = int(data["key"])
     item_div = await page.query_selector(
         f".MuiGrid-root-128.product-tile.MuiGrid-item-130.MuiGrid-grid-xs-6-168.MuiGrid-grid-sm-4-180.MuiGrid-grid-md-4-194.MuiGrid-grid-lg-3-207:nth-of-type({i}) .productlist-img"
     )
@@ -156,7 +156,7 @@ async def main():
         page = await browser.new_page()
         ## LOGGING IN
         await page.goto("https://shop.fls2u.com/login")
-        await page.wait_for_timeout(2000)
+        await page.wait_for_timeout(5000)
         # await page.get_by_text("Accept All Cookies", exact=True).click()
         await page.get_by_label("Username / Email*").click()
         await page.get_by_label("Username / Email*").fill("jack@duffl.com")
