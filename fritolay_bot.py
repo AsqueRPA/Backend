@@ -11,7 +11,7 @@ load_dotenv()
 port = os.getenv("PORT")
 
 
-async def search(page, item_name, search_terms=[]):
+async def search(page, item_name, search_terms):
     joshyTrain = JoshyTrain(page)
     minimum_confidence = 7
     minimum_search_terms = 3
@@ -57,7 +57,7 @@ if the full name is Cheetos Crunchy - Cheddar Jalapeno - 3.25 oz, you can try th
         await card_title.click()
         await page.wait_for_selector(".product-title", state="visible")
         modal_text = await page.inner_text(".product-title")
-        card_text_map[index] = modal_text
+        card_text_map[index + 2] = modal_text
         await page.click('[aria-label="close"]')
         await page.wait_for_timeout(
             2000
@@ -67,7 +67,6 @@ if the full name is Cheetos Crunchy - Cheddar Jalapeno - 3.25 oz, you can try th
         if len(search_terms) <= minimum_search_terms:
             return await search(page, item_name, search_terms)
         else:
-            search_terms = []
             return 0
 
     prompt = f"""
@@ -77,7 +76,7 @@ if the full name is Cheetos Crunchy - Cheddar Jalapeno - 3.25 oz, you can try th
     """
     response = await joshyTrain.chat(prompt)
     data = joshyTrain.extract_json(response)
-    i = int(data["index"]) + 2
+    i = int(data["index"])
     item_div = await page.query_selector(
         f".MuiGrid-root-128.product-tile.MuiGrid-item-130.MuiGrid-grid-xs-6-168.MuiGrid-grid-sm-4-180.MuiGrid-grid-md-4-194.MuiGrid-grid-lg-3-207:nth-of-type({i}) .productlist-img"
     )
@@ -125,7 +124,6 @@ Add the score up and return the following JSON format:
     if int(data["confidence"]) <= minimum_confidence:
         return await search(page, item_name, search_terms)
     else:
-        search_terms = []
         return i
 
 
@@ -175,7 +173,7 @@ async def main():
                 row["updated_upc"] = ""
                 item_name = row["product_name"]
                 # item_name = "Cheetos Crunchy - Cheddar Jalapeno - 3.25 oz"
-                i = await search(page, item_name)
+                i = await search(page, item_name, [])
                 print(i)
 
                 if not i:
