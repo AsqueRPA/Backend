@@ -5,6 +5,7 @@ import os
 from dotenv import load_dotenv
 import csv
 import re
+import argparse
 
 load_dotenv()
 
@@ -140,6 +141,15 @@ Add the score up and return the following JSON format:
 
 async def main():
     async with async_playwright() as p:
+        # Initialize the parser
+        parser = argparse.ArgumentParser()
+
+        # Add parameters
+        parser.add_argument("-f", type=str)
+
+        # Parse the arguments
+        file = parser.parse_args().f
+        
         # # Local browser
         # executablePath = (
         #     "/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary"
@@ -176,7 +186,7 @@ async def main():
 
         result_rows = []
 
-        with open("orders.csv", mode="r") as file:
+        with open(file, mode="r") as file:
             dict_reader = csv.DictReader(file)
             # [name, upc, order status]
             for row in dict_reader:
