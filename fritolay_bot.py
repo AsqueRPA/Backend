@@ -65,7 +65,7 @@ if the full name is Cheetos Crunchy - Cheddar Jalapeno - 3.25 oz, you can try th
 give your confidence level on this current item being the item, {item_name}, that we are looking for from 0-10, which is your combined score from the following criteria:
 
 the brand name:
-- 1pt if the brand name is in the item name
+- 2pt if the brand name is in the item name
 - 0pt if the brand name is not in the item name
 
 the product name:
@@ -74,8 +74,9 @@ the product name:
 - 0pt if the product name is not close to the correct product name
 
 the flavor:
-- 2pts if the flavor is exactly correct 
-- 1pt if the flavor is close to the correct flavor, for example, if the item name is Cheetos Crunchy - Cheddar Jalapeno - 3.25 oz, then Jalapeno or Cheddar is close to the correct flavor (Cheddar Jalapeno is the correct flavor)
+- 3pts if the flavor is exactly correct 
+- 2pts if the flavor is close to the correct flavor, for example, if the item name is Cheetos Crunchy - Cheddar Jalapeno - 3.25 oz, then Jalapeno or Cheddar is close to the correct flavor (Cheddar Jalapeno is the correct flavor)
+- 1pt if the flavor is somewhat close to the correct flavor
 - 0pt if the flavor is not close to the correct flavor
 
 the size:
@@ -83,11 +84,9 @@ the size:
 - 1pt if the size is close to the correct size, for example, if the item name is 3.25 oz, then 3 oz or 4 oz is close to the correct size
 - 0pt if the size is not close to the correct size
 
-rest of the 3 pts:
-- Use all other information that is available on the page to give a score from 0-3, 
-for example, if the product is Cheetos Crunchy - Cheddar Jalapeno, then you know the packaging is traditionally yellow and green,
-whereas if the product was the Flaming Hot version, then the packaging would be red and yellow.
-packaging is just an example, you can use any other information that is available on the page to give a score from 0-3
+the packaging:
+- 1pt if the packaging is correct, for example, if the item name is Cheetos Crunchy - Cheddar Jalapeno, then the packaging should be yellow and green
+- 0pt if the packaging is not correct, for example, if the item name is Cheetos Crunchy - Cheddar Jalapeno, then the packaging should not be red and blue
 
 Add the score up and return the following JSON format:
 {{
@@ -99,13 +98,14 @@ Add the score up and return the following JSON format:
             )
             data = joshyTrain.extract_json(response)
             if data and "confidence" in data:
-                if int(data["confidence"]) == 10:
-                    return i
+
                 item_dict[i] = data
             close_icon = await page.query_selector(
                 'img[src="a8d398bb099ac1e54d401925030b9aa2.svg"]'
             )
             await close_icon.click()
+            if int(data["confidence"]) == 10:
+                return i
         except Exception as e:
             print("Finished eval")
             break
@@ -120,7 +120,7 @@ Add the score up and return the following JSON format:
         else:
             search_terms = []
             return 0
-    elif int(sorted_items[0][1]["confidence"]) < minimum_confidence:
+    elif int(sorted_items[0][1]["confidence"]) <= minimum_confidence:
         return await search(page, item_name, search_terms)
     else:
         search_terms = []
