@@ -45,7 +45,7 @@ if the full name is Cheetos Crunchy - Cheddar Jalapeno - 3.25 oz, you can try th
             break
 
     # # Manual Search
-    # await page.get_by_placeholder("Search Product").fill("Cheetos")
+    # await page.get_by_placeholder("Search Product").fill("Cheetos Crunchy")
     # await page.keyboard.press("Enter")
     # await page.wait_for_timeout(5000)
 
@@ -85,7 +85,7 @@ the size:
 - 0pt if the size is not close to the correct size
 
 the packaging:
-- 1pt if the packaging is correct, for example, if the item name is Cheetos Crunchy - Cheddar Jalapeno, then the packaging should be yellow and green
+- 1pt if the packaging is correct, for example, if the item name is Cheetos Crunchy - Cheddar Jalapeno, then the packaging should be green and yellow
 - 0pt if the packaging is not correct, for example, if the item name is Cheetos Crunchy - Cheddar Jalapeno, then the packaging should not be red and blue
 
 Add the score up and return the following JSON format:
@@ -172,6 +172,7 @@ async def main():
                 row["updated_price"] = ""
                 row["updated_upc"] = ""
                 item_name = row["product_name"]
+                # item_name = "Cheetos Crunchy - Cheddar Jalapeno - 3.25 oz"
                 i = await search(page, item_name)
                 print(i)
 
