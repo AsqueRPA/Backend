@@ -1,0 +1,2 @@
+product_name,supplier_name,total_packs_ordered,pack_size,pack_price,PO_cost,total_packs_received,receipt_pack_price,received_cost,upc,store_id,store_name,product_id,restock_order_id,is_out_of_stock,out_of_stock_reason,updated_price,updated_upc
+Funyuns - Original - 2.125 oz,Frito Lay,3,1,1.88,5.64,,,,,2,USC,1956,13421,FALSE,,,63286

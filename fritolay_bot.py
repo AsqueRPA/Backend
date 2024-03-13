@@ -1,4 +1,3 @@
-from playwright.sync_api import Playwright, sync_playwright
 import asyncio
 from web_agent import JoshyTrain
 from playwright.async_api import async_playwright
@@ -130,19 +129,21 @@ async def main():
 
         await page.wait_for_timeout(8000)
 
+        result_rows = []
+
         with open("orders.csv", mode="r") as file:
             dict_reader = csv.DictReader(file)
             # [name, upc, order status]
-            cart = []
             for row in dict_reader:
-                print(row)
+                row["updated_price"] = ""
+                row["updated_upc"] = ""
                 item_name = row["product_name"]
                 i = await search(page, item_name)
                 print(i)
 
                 if not i:
-                    print("No Record Found")
-                    cart = [item_name, upc_number, "No Record Found"]
+                    print("not_found")
+                    row["out_of_stock_reason"] = "not_found"
                     continue
 
                 item_div = await page.query_selector(
@@ -156,18 +157,31 @@ async def main():
                 await page.wait_for_timeout(2000)
                 await page.screenshot(path="screenshot.jpg", full_page=True)
 
-                product_details_div = await page.query_selector('.MuiGrid-root-128.product-detail-wrapper-inner')
+                product_details_div = await page.query_selector(
+                    ".MuiGrid-root-128.product-detail-wrapper-inner"
+                )
 
-                upc_number = await product_details_div.query_selector('.product-info-text:has-text("UPC:")')
-                
-                upc_number = re.search(r'UPC:\s*(\d+)', await upc_number.inner_text())
+                upc_number = await product_details_div.query_selector(
+                    '.product-info-text:has-text("UPC:")'
+                )
+                upc_number = re.search(r"UPC:\s*(\d+)", await upc_number.inner_text())
                 if upc_number:
-                    upc_number = upc_number.group(1)  # This is your UPC number
-    
+                    upc_number = upc_number.group(1)
+                    if upc_number != row["upc"]:
+                        row["updated_upc"] = upc_number
+
+                product_cost = await product_details_div.query_selector(".product-cost")
+                product_cost = re.search(r"Cost:\s*\$(\d+\.\d+)", "Cost: $1.88")
+                if product_cost:
+                    product_cost = product_cost.group(1)
+                    if product_cost != row["pack_price"]:
+                        row["updated_price"] = product_cost
+
                 out_of_stock = await page.query_selector(".product-out-stock.list")
                 if out_of_stock:
-                    print("Out of Stock")
-                    cart.append([item_name, upc_number, "Out of Stock"])
+                    print("product_oos")
+                    row["is_out_of_stock"] = True
+                    row["out_of_stock_reason"] = "not_found"
                 else:
                     input_element = await page.query_selector(
                         ".product-detail-wrapper .MuiInputBase-input-395.MuiOutlinedInput-input-382.MuiInputBase-inputAdornedEnd-400.MuiOutlinedInput-inputAdornedEnd-386"
@@ -176,7 +190,6 @@ async def main():
                     number_of_packs = row["total_packs_ordered"]
                     await input_element.fill(number_of_packs)
                     await page.keyboard.press("Tab")
-                    cart = [item_name, upc_number, f"Added {number_of_packs} to Cart"]
 
                     await page.wait_for_timeout(2000)
                     await page.screenshot(path="screenshot.jpg", full_page=True)
@@ -188,15 +201,18 @@ async def main():
 
                 await page.wait_for_timeout(2000)
                 await page.screenshot(path="screenshot.jpg", full_page=True)
-                print(cart)
+                print(row)
+                result_rows.append(row)
 
             cart_icon = await page.query_selector('img[src="www/images/cart.svg"]')
             await cart_icon.click()
 
             await page.screenshot(path="screenshot.jpg", full_page=True)
-            with open("result.csv", "w", newline="") as file:
-                writer = csv.writer(file)
-                writer.writerows(cart.items())
+            with open("result.csv", mode="w", newline="") as file:
+                fieldnames = result_rows[0].keys()
+                dict_writer = csv.DictWriter(file, fieldnames=fieldnames)
+                dict_writer.writeheader()
+                dict_writer.writerows(result_rows)
 
 
 asyncio.run(main())
