@@ -82,34 +82,17 @@ DON'T include the size when you are searching, the ID for the search bar is usua
     try:
         prompt = f"""
         given the python dict, please return the key where the value of this key is closest to {item_name} in the {card_text_map}. 
-        Respond with the following JSON format:
-        {{"key": "the key of the item that matches {item_name}"}}
-        """
-        response = await joshyTrain.chat(prompt)
-        data = joshyTrain.extract_json(response)
-        i = int(data["key"])
-        item_div = await page.query_selector(
-            f".MuiGrid-root-128.product-tile.MuiGrid-item-130.MuiGrid-grid-xs-6-168.MuiGrid-grid-sm-4-180.MuiGrid-grid-md-4-194.MuiGrid-grid-lg-3-207:nth-of-type({i}) .productlist-img"
-        )
-        await item_div.click()
-    except Exception as e:
-        if len(search_terms) < minimum_search_terms:
-            return await search(page, item_name, search_terms)
-        else:
-            return 0
 
-    # gpt gives confidence level based on details pop up
-    response = await joshyTrain.chat(
-        f"""
-give your confidence level on this current item being the item, {item_name}, that we are looking for from 0-10, which is your combined score from the following criteria:
+        give your confidence level on this from 0-10, which is your combined score from the following criteria:
 
 the brand name:
 - 2pt if the brand name is in the item name
 - 0pt if the brand name is not in the item name
 
 the product name:
-- 2pts if the product name is exactly correct 
-- 1pt if the product name is close to the correct product name, for example, if the item name is Cheetos Crunchy - Cheddar Jalapeno - 3.25 oz, then Cheetos is close to the correct product name (Cheetos Crunchy is the correct product name)
+- 3pts if the product name is exactly correct 
+- 2pts if the product name is close to the correct product name, for example, if the item name is Cheetos Crunchy - Cheddar Jalapeno - 3.25 oz, then Cheetos is close to the correct product name (Cheetos Crunchy is the correct product name)
+- 1pt if the product name is somewhat close to the correct product name
 - 0pt if the product name is not close to the correct product name
 
 the flavor:
@@ -123,28 +106,26 @@ the size:
 - 1pt if the size is close to the correct size, for example, if the item name is 3.25 oz, then 3 oz or 4 oz is close to the correct size
 - 0pt if the size is not close to the correct size
 
-the packaging:
-- 1pt if the packaging seems correct
-- 0pt if the packaging is completely off
-
 Add the score up and return the following JSON format:
 {{
+"key": "the key of the item that matches {item_name}",
 "confidence": "your combined confidence level",
 "reasoning": "your reasoning"
 }}
 """
-    )
-    close_icon = await page.query_selector(
-        'img[src="a8d398bb099ac1e54d401925030b9aa2.svg"]'
-    )
-    await close_icon.click()
-    data = joshyTrain.extract_json(response)
-
-     # continue searching if confidence did not meet criteria
-    if int(data["confidence"]) <= minimum_confidence:
-        return await search(page, item_name, search_terms)
-    else:
-        return i
+        response = await joshyTrain.chat(prompt)
+        data = joshyTrain.extract_json(response)
+        i = int(data["key"])
+        # continue searching if confidence did not meet criteria
+        if int(data["confidence"]) <= minimum_confidence:
+            return await search(page, item_name, search_terms)
+        else:
+            return i
+    except Exception as e:
+        if len(search_terms) < minimum_search_terms:
+            return await search(page, item_name, search_terms)
+        else:
+            return 0
 
 
 async def main():
@@ -157,7 +138,7 @@ async def main():
 
         # Parse the arguments
         file = parser.parse_args().f
-        
+
         # # Local browser
         # executablePath = (
         #     "/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary"
@@ -203,7 +184,7 @@ async def main():
                 row["updated_upc"] = ""
                 item_name = row["product_name"]
                 # item_name = "Cheetos Crunchy - Cheddar Jalapeno - 3.25 oz"
-                
+
                 # search function returns index of "found" item, index starts from 1
                 i = await search(page, item_name, [])
                 print(i)
@@ -213,7 +194,7 @@ async def main():
                     row["out_of_stock_reason"] = "not_found"
                     continue
 
-                # find the image of the item card (you can only open pop up from image or title)    
+                # find the image of the item card (you can only open pop up from image or title)
                 item_div = await page.query_selector(
                     f".MuiGrid-root-128.product-tile.MuiGrid-item-130.MuiGrid-grid-xs-6-168.MuiGrid-grid-sm-4-180.MuiGrid-grid-md-4-194.MuiGrid-grid-lg-3-207:nth-of-type({i}) .productlist-img"
                 )
@@ -264,7 +245,7 @@ async def main():
 
                     await page.wait_for_timeout(2000)
                     await page.screenshot(path="screenshot.jpg", full_page=True)
-                
+
                 # close the details pop up
                 close_icon = await page.query_selector(
                     'img[src="a8d398bb099ac1e54d401925030b9aa2.svg"]'
@@ -281,7 +262,7 @@ async def main():
             await cart_icon.click()
 
             await page.screenshot(path="screenshot.jpg", full_page=True)
-            
+
             # writing csv with new columns
             with open("result.csv", mode="w", newline="") as file:
                 fieldnames = result_rows[0].keys()
