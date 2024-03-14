@@ -173,9 +173,9 @@ async def main():
         await page.wait_for_timeout(5000)
         # await page.get_by_text("Accept All Cookies", exact=True).click()
         await page.get_by_label("Username / Email*").click()
-        await page.get_by_label("Username / Email*").fill("jack@duffl.com")
+        await page.get_by_label("Username / Email*").fill("max@duffl.com")
         await page.get_by_label("Password*").click()
-        await page.get_by_label("Password*").fill("dufflucsb2021")
+        await page.get_by_label("Password*").fill("dufflfrito1071")
         await page.get_by_label("login", exact=True).click()
 
         await page.wait_for_timeout(8000)
