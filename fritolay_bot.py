@@ -60,8 +60,11 @@ async def search(page, item_name, search_terms):
     - Cheetos Crunchy (brand + product name)
     - Cheddar Jalapeno (flavor)
     - Cheetos (just brand)
-    - MAKE SURE TO ALSO TRY OTHER COMBINATION OF THE WORDS IF THE ABOVE DOESNT WORK
+    - try the above but also try with other word combinations too
+
     DON'T include the size in the search terms you come up with
+    DON'T repeat search terms
+    
     Just come up with ONE search term
 
     you have already tried {search_terms}
