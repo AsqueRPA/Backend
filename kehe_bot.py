@@ -39,51 +39,53 @@ async def main():
                 # item_name = "Cheetos Crunchy - Cheddar Jalapeno - 3.25 oz"
 
                 joshyTrain = JoshyTrain(page)
-                search_instruction = """
-            when you are searching for an item, try different search terms, for example: 
-            if the full name is Cheetos Crunchy - Cheddar Jalapeno - 3.25 oz, you can try the following
-            - Cheetos Crunchy Cheddar Jalapeno
-            - Cheetos Crunchy
-            - Cheddar Jalapeno
-            - Cheetos
-            - MAKE SURE TO ALSO TRY OTHER COMBINATION OF THE WORDS OR JUST THE BRAND NAME AS WELL
-            """
-                while True:
-                    try:
-                        response = await joshyTrain.chat(
-                            f"""{search_instruction}, DO: INPUT different search terms into the search bar for {item_name}, you have already tried {search_terms}.
+            #     search_instruction = """
+            # when you are searching for an item, try different search terms, for example: 
+            # if the full name is Cheetos Crunchy - Cheddar Jalapeno - 3.25 oz, you can try the following
+            # - Cheetos Crunchy Cheddar Jalapeno
+            # - Cheetos Crunchy
+            # - Cheddar Jalapeno
+            # - Cheetos
+            # - MAKE SURE TO ALSO TRY OTHER COMBINATION OF THE WORDS OR JUST THE BRAND NAME AS WELL
+            # """
+            #     while True:
+            #         try:
+            #             response = await joshyTrain.chat(
+            #                 f"""{search_instruction}, DO: INPUT different search terms into the search bar for {item_name}, you have already tried {search_terms}.
 
-                            Just try once and then return the following JSON format: 
-                            {{"searchTerm": "exact search term you put as the input", "itemsFound": "yes" or "no"}}
+            #                 Just try once and then return the following JSON format: 
+            #                 {{"searchTerm": "exact search term you put as the input", "itemsFound": "yes" or "no"}}
 
-                            the above is your ONLY OPTION AFTER ATTEMPTING TO INPUT INTO THE SEARCH BAR, never output {{"searchTerm": "exact search term you put as the input", "itemsFound": "yes" or "no"}} if you haven't outputted {{"input": {{"select": "ID", "text": "exact search term you put as the input"}}}}
+            #                 the above is your ONLY OPTION AFTER ATTEMPTING TO INPUT INTO THE SEARCH BAR, never output {{"searchTerm": "exact search term you put as the input", "itemsFound": "yes" or "no"}} if you haven't outputted {{"input": {{"select": "ID", "text": "exact search term you put as the input"}}}}
 
-                            if you don't follow the above, then the program will not work.
-                            """
-                        )
-                        data = joshyTrain.extract_json(response)
-                        if data and "searchTerm" in data:
-                            search_term = data["searchTerm"]
-                            search_terms.append(search_term)
-                            if str(data["itemsFound"]).lower() == "yes":
-                                break
-                    except Exception as e:
-                        print(e)
-                        continue
+            #                 if you don't follow the above, then the program will not work.
+            #                 """
+            #             )
+            #             data = joshyTrain.extract_json(response)
+            #             if data and "searchTerm" in data:
+            #                 search_term = data["searchTerm"]
+            #                 search_terms.append(search_term)
+            #                 if str(data["itemsFound"]).lower() == "yes":
+            #                     break
+            #         except Exception as e:
+            #             print(e)
+            #             continue
+                
+                await joshyTrain.chat(f"search {item_name} in the search bar")
                 response = await joshyTrain.chat(
-                    f'tell me the name of the item in JSON format that is most similar to {item_name}, {{"name": "exact name of the item"}}'
+                    f"""tell me the name of the item in JSON format that is most similar to {item_name}.
+                    Consider similarities in brand, product name, flavor, and size. 
+                    Respond in the following JSON format: 
+                    {{"name": "exact name of the item", "reason": "your reason for choosing this item"}}"""
                 )
                 data = joshyTrain.extract_json(response)
                 if data and "name" in data:
                     name = data["name"]
                 else:
                     name = item_name
-                await joshyTrain.chat(
-                    f"click the image for {name}  and don't do anything else"
-                )
                 number_of_packs = row["total_packs_ordered"]
                 await joshyTrain.chat(
-                    f"put {number_of_packs} for amount and click 'Add to Cart'. if it asks you for the order name, put 'test order' and click 'Add to Cart', otherwise do nothing."
+                    f"For {name}, put {number_of_packs} for amount and click 'Add'. if it asks you for the order name, put 'test order' and click 'Add to Cart', otherwise do nothing."
                 )
 
             cart_icon = await page.query_selector('img[src="www/images/cart.svg"]')
