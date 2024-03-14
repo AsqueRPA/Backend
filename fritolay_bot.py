@@ -28,6 +28,7 @@ DON'T include the size when you are searching, the ID for the search bar is usua
 """
     while True:
         try:
+            # prompt I used to search 
             response = await joshyTrain.chat(
                 f"""{search_instruction}, DO: INPUT different search terms into the search bar for {item_name}, you have already tried {search_terms}.
 
@@ -92,7 +93,8 @@ DON'T include the size when you are searching, the ID for the search bar is usua
             return await search(page, item_name, search_terms)
         else:
             return 0
-        
+
+    # prompt for confidence on this is the right product               
     response = await joshyTrain.chat(
         f"""
 give your confidence level on this current item being the item, {item_name}, that we are looking for from 0-10, which is your combined score from the following criteria:

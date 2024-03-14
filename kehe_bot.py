@@ -151,11 +151,10 @@ async def main():
         await page.get_by_text("Log In", exact=True).click()
 
         await page.wait_for_timeout(8000)
-        return
 
         result_rows = []
 
-        with open(file, mode="r") as file:
+        with open("orders.csv", mode="r") as file:
             dict_reader = csv.DictReader(file)
             # [name, upc, order status]
             for row in dict_reader:
