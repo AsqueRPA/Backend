@@ -157,6 +157,8 @@ async def search(page, item_name, search_terms):
     "confidence": "your combined confidence level",
     "reasoning": "your reasoning"
     }}
+
+    have your explanation inside the JSON, your response should only contain the JSON and NOTHING ELSE
     """
             response = await chat(prompt)
             data = joshyTrain.extract_json(response)
