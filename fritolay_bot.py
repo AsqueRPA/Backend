@@ -6,11 +6,40 @@ from dotenv import load_dotenv
 import csv
 import re
 import argparse
+from openai import OpenAI
 
 load_dotenv()
 
 port = os.getenv("PORT")
+model = OpenAI()
+model.timeout = 30
 
+# TODO:
+# somtimes bot will navigate away / click random stuff for no reason
+# wait for more timeout to close boxes and stuff
+# still trying to input into 35
+
+# things that could be fixed but not right now
+# jars need to be ordered in multiples of 4
+# cart cannot exceed 1k so make the bot stop and output csv showing where it left off
+
+
+async def chat(prompt):
+    print("User:", prompt)
+    response = model.chat.completions.create(
+        model="gpt-4-0125-preview",
+        messages=[
+            {
+                "role": "user",
+                "content": prompt,
+            },
+        ],
+        max_tokens=4096,
+    )
+    message = response.choices[0].message
+    message_text = message.content
+    print("Assistant:", message_text)
+    return message_text
 
 async def search(page, item_name, search_terms):
     try:
@@ -18,48 +47,57 @@ async def search(page, item_name, search_terms):
         minimum_confidence = 7
         minimum_search_terms = 3
         maximum_search_terms = 10
-        search_instruction = """
-    when you are searching for an item, try different search terms, for example: 
-    if the full name is Cheetos Crunchy - Cheddar Jalapeno - 3.25 oz, you can try the following
-    - Cheetos Crunchy Cheddar Jalapeno
-    - Cheetos Crunchy
-    - Cheddar Jalapeno
-    - Cheetos
-    - MAKE SURE TO ALSO TRY OTHER COMBINATION OF THE WORDS OR JUST THE BRAND NAME AS WELL
-    DON'T include the size when you are searching, the ID for the search bar is usually 15 defintely NOT 215 and NOT 34 NOR 35.
-    """
         while True:
             if len(search_terms) > maximum_search_terms:
                 return 0
             try:
                 # prompt gpt to search different search terms
                 # gpt returns the search term and a boolean representing whether it found product with that search term
-                response = await joshyTrain.chat(
-                    f"""{search_instruction}, DO: INPUT different search terms into the search bar for {item_name}, you have already tried {search_terms}.
+                response = await chat(
+                    f"""
+    come up with different search terms for {item_name} for example: 
+    if the full name is Cheetos Crunchy - Cheddar Jalapeno - 3.25 oz, you can try the following
+    - Cheetos Crunchy (brand + product name)
+    - Cheddar Jalapeno (flavor)
+    - Cheetos (just brand)
+    - MAKE SURE TO ALSO TRY OTHER COMBINATION OF THE WORDS IF THE ABOVE DOESNT WORK
+    DON'T include the size in the search terms you come up with
+    Just come up with ONE search term
 
-                    Just try once and then return the following JSON format: 
-                    {{"searchTerm": "exact search term you put as the input", "itemsFound": "yes" or "no"}}
+    you have already tried {search_terms}
 
-                    the above is your ONLY OPTION AFTER ATTEMPTING TO INPUT INTO THE SEARCH BAR, never output {{"searchTerm": "exact search term you put as the input", "itemsFound": "yes" or "no"}} if you haven't outputted {{"input": {{"select": "ID", "text": "exact search term you put as the input"}}}}
+    respond in the following JSON format:
 
-                    if you don't follow the above, then the program will not work.
-                    """
+    {{"searchTerm": "your search term"}}
+    """
                 )
                 # the search term is appended into a list that is passed into gpt so that it knows to not repeat search terms
                 data = joshyTrain.extract_json(response)
                 if data and "searchTerm" in data:
                     search_term = data["searchTerm"]
                     search_terms.append(search_term)
-                    if str(data["itemsFound"]).lower() == "yes":
+                    
+                    # Manual Search
+                    await page.get_by_placeholder("Search Product").fill(search_term)
+                    await page.keyboard.press("Enter")
+                    await page.wait_for_timeout(5000)
+                    await page.screenshot(path="screenshot.jpg", full_page=True)
+
+                    # Check for the element
+                    no_record_element = await page.query_selector('h1:text("No Record Found")')
+
+                    # Validate if the element exists
+                    if no_record_element:
+                        continue
+                    else:
                         break
+                else:
+                    return 0
             except Exception as e:
                 print(e)
                 continue
 
-        # # Manual Search
-        # await page.get_by_placeholder("Search Product").fill("Cheetos Crunchy")
-        # await page.keyboard.press("Enter")
-        # await page.wait_for_timeout(5000)
+        
 
         # return 2
 
@@ -117,9 +155,10 @@ async def search(page, item_name, search_terms):
     "reasoning": "your reasoning"
     }}
     """
-            response = await joshyTrain.chat(prompt)
+            response = await chat(prompt)
             data = joshyTrain.extract_json(response)
             i = int(data["key"])
+            await page.screenshot(path="screenshot.jpg", full_page=True)
             # continue searching if confidence did not meet criteria
             if int(data["confidence"]) <= minimum_confidence:
                 return await search(page, item_name, search_terms)
@@ -142,40 +181,27 @@ async def main():
 
         # Add parameters
         parser.add_argument("-f", type=str)
+        parser.add_argument("-u", type=str)
+        parser.add_argument("-p", type=str)
+
+
 
         # Parse the arguments
         file = parser.parse_args().f
+        username = parser.parse_args().u
+        password = parser.parse_args().p
 
-        # # Local browser
-        # executablePath = (
-        #     "/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary"
-        # )
-
-        # userDataDir = "/Users/hugozhan/Library/Application Support/Google/Chrome Canary"
-
-        # browser = await p.chromium.launch_persistent_context(
-        #     executable_path=executablePath,
-        #     user_data_dir=userDataDir,
-        #     headless=False,
-        # )
-
-        # Remote browser
-        userDataDir = "/home/ubuntu/.mozilla/firefox/96tbgq4x.default-release"
-
-        browser = await p.firefox.launch_persistent_context(
-            userDataDir,
-            headless=False,
-        )
+        browser = await p.chromium.launch(headless=False, slow_mo=50)
 
         page = await browser.new_page()
         ## LOGGING IN
         await page.goto("https://shop.fls2u.com/login")
         await page.wait_for_timeout(5000)
-        # await page.get_by_text("Accept All Cookies", exact=True).click()
+        await page.get_by_text("Accept All Cookies", exact=True).click()
         await page.get_by_label("Username / Email*").click()
-        await page.get_by_label("Username / Email*").fill("max@duffl.com")
+        await page.get_by_label("Username / Email*").fill(username)
         await page.get_by_label("Password*").click()
-        await page.get_by_label("Password*").fill("dufflfrito1071")
+        await page.get_by_label("Password*").fill(password)
         await page.get_by_label("login", exact=True).click()
 
         await page.wait_for_timeout(8000)
@@ -187,8 +213,6 @@ async def main():
             dict_reader = csv.DictReader(file)
             # loop through rows
             for row in dict_reader:
-                row["updated_price"] = ""
-                row["updated_upc"] = ""
                 item_name = row["product_name"]
                 # item_name = "Cheetos Crunchy - Cheddar Jalapeno - 3.25 oz"
 
@@ -219,21 +243,22 @@ async def main():
                         ".MuiGrid-root-128.product-detail-wrapper-inner"
                     )
 
-                    upc_number = await product_details_div.query_selector(
-                        '.product-info-text:has-text("UPC:")'
-                    )
-                    upc_number = re.search(r"UPC:\s*(\d+)", await upc_number.inner_text())
-                    if upc_number:
-                        upc_number = upc_number.group(1)
-                        if upc_number != row["upc"]:
-                            row["updated_upc"] = upc_number
+                    ## probably dont need this right now
+                    # upc_number = await product_details_div.query_selector(
+                    #     '.product-info-text:has-text("UPC:")'
+                    # )
+                    # upc_number = re.search(r"UPC:\s*(\d+)", await upc_number.inner_text())
+                    # if upc_number:
+                    #     upc_number = upc_number.group(1)
+                    #     if upc_number != row["upc"]:
+                    #         row["updated_upc"] = upc_number
 
-                    product_cost = await product_details_div.query_selector(".product-cost")
-                    product_cost = re.search(r"Cost:\s*\$(\d+\.\d+)", "Cost: $1.88")
-                    if product_cost:
-                        product_cost = product_cost.group(1)
-                        if product_cost != row["pack_price"]:
-                            row["updated_price"] = product_cost
+                    # product_cost = await product_details_div.query_selector(".product-cost")
+                    # product_cost = re.search(r"Cost:\s*\$(\d+\.\d+)", "Cost: $1.88")
+                    # if product_cost:
+                    #     product_cost = product_cost.group(1)
+                    #     if product_cost != row["pack_price"]:
+                    #         row["updated_price"] = product_cost
 
                     # check if its out of stock
                     out_of_stock = await page.query_selector(".product-out-stock.list")

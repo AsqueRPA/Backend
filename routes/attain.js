@@ -9,7 +9,8 @@ const router = express.Router();
 router.post("/fritolay", csvUpload.single('csv'), async (req, res) => {
   try {
     const filePath = req.file.path;
-    scheduleFritoLayJob(filePath);
+    const { username, password } = req.body;
+    scheduleFritoLayJob(filePath, username, password);
     return res.status(200).send("FritoLay ordering started");
   } catch (error) {
     console.log(error);

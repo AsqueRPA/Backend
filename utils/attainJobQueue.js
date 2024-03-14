@@ -13,7 +13,7 @@ const jobQueue = new Bull("attainJobQueue", {
 await jobQueue.empty();
 
 jobQueue.process(async (job) => {
-  const { filePath, type } = job.data;
+  const { filePath, username, password, type } = job.data;
   switch (type) {
     case "fritolay": {
       return new Promise((resolve, reject) => {
@@ -22,6 +22,10 @@ jobQueue.process(async (job) => {
           "./fritolay_bot.py",
           "-f",
           filePath,
+          "-u",
+          username,
+          "-p",
+          password,
         ]);
 
         pythonProcess.stdout.on("data", (data) => {
@@ -47,17 +51,19 @@ jobQueue.process(async (job) => {
   }
 });
 
-function scheduleFritoLayJob(filePath) {
-  jobQueue.add({ filePath, type: "fritolay" }).then((job) => {
-    job
-      .finished()
-      .then(async () => {
-        console.log(`FritoLay job ${job.id} completed`);
-      })
-      .catch((error) => {
-        console.error(`FritoLay job ${job.id} failed`, error);
-      });
-  });
+function scheduleFritoLayJob(filePath, username, password) {
+  jobQueue
+    .add({ filePath, username, password, type: "fritolay" })
+    .then((job) => {
+      job
+        .finished()
+        .then(async () => {
+          console.log(`FritoLay job ${job.id} completed`);
+        })
+        .catch((error) => {
+          console.error(`FritoLay job ${job.id} failed`, error);
+        });
+    });
 }
 
 export { scheduleFritoLayJob, jobQueue };
