@@ -28,6 +28,8 @@ DON'T include the size when you are searching, the ID for the search bar is usua
 """
     while True:
         try:
+            # prompt gpt to search different search terms
+            # gpt returns the search term and a boolean representing whether it found product with that search term
             response = await joshyTrain.chat(
                 f"""{search_instruction}, DO: INPUT different search terms into the search bar for {item_name}, you have already tried {search_terms}.
 
@@ -39,6 +41,7 @@ DON'T include the size when you are searching, the ID for the search bar is usua
                 if you don't follow the above, then the program will not work.
                 """
             )
+            # the search term is appended into a list that is passed into gpt so that it knows to not repeat search terms
             data = joshyTrain.extract_json(response)
             if data and "searchTerm" in data:
                 search_term = data["searchTerm"]
@@ -56,6 +59,7 @@ DON'T include the size when you are searching, the ID for the search bar is usua
 
     # return 2
 
+    # loop through every product on the page and get its full name
     card_text_map = {}
     card_titles = await page.query_selector_all(".pro-list-title-mob")
     for index, card_title in enumerate(card_titles):
@@ -73,6 +77,7 @@ DON'T include the size when you are searching, the ID for the search bar is usua
             return 0
 
     try:
+        # gpt finds cloest product with name
         prompt = f"""
         given the python dict, please return the key where the value of this key is closest to {item_name} in the {card_text_map}. 
         Respond with the following JSON format:
@@ -91,6 +96,7 @@ DON'T include the size when you are searching, the ID for the search bar is usua
         else:
             return 0
 
+    # gpt gives confidence level based on details pop up
     response = await joshyTrain.chat(
         f"""
 give your confidence level on this current item being the item, {item_name}, that we are looking for from 0-10, which is your combined score from the following criteria:
@@ -130,6 +136,8 @@ Add the score up and return the following JSON format:
         'img[src="a8d398bb099ac1e54d401925030b9aa2.svg"]'
     )
     await close_icon.click()
+
+    # continue searching if confidence did not meet criteria
     data = joshyTrain.extract_json(response)
     if int(data["confidence"]) <= minimum_confidence:
         return await search(page, item_name, search_terms)
@@ -154,14 +162,17 @@ async def main():
 
         result_rows = []
 
+        # opening csv
         with open("orders.csv", mode="r") as file:
             dict_reader = csv.DictReader(file)
-            # [name, upc, order status]
+            # loop through rows
             for row in dict_reader:
                 row["updated_price"] = ""
                 row["updated_upc"] = ""
                 item_name = row["product_name"]
                 # item_name = "Cheetos Crunchy - Cheddar Jalapeno - 3.25 oz"
+
+                # search function returns index of "found" item, index starts from 1
                 i = await search(page, item_name, [])
                 print(i)
 
@@ -170,6 +181,7 @@ async def main():
                     row["out_of_stock_reason"] = "not_found"
                     continue
 
+                # find the image of the item card (you can only open pop up from image or title)    
                 item_div = await page.query_selector(
                     f".MuiGrid-root-128.product-tile.MuiGrid-item-130.MuiGrid-grid-xs-6-168.MuiGrid-grid-sm-4-180.MuiGrid-grid-md-4-194.MuiGrid-grid-lg-3-207:nth-of-type({i}) .productlist-img"
                 )
@@ -181,6 +193,7 @@ async def main():
                 await page.wait_for_timeout(5000)
                 await page.screenshot(path="screenshot.jpg", full_page=True)
 
+                # get the product details div and get upc and price
                 product_details_div = await page.query_selector(
                     ".MuiGrid-root-128.product-detail-wrapper-inner"
                 )
@@ -201,12 +214,14 @@ async def main():
                     if product_cost != row["pack_price"]:
                         row["updated_price"] = product_cost
 
+                # check if its out of stock
                 out_of_stock = await page.query_selector(".product-out-stock.list")
                 if out_of_stock:
                     print("product_oos")
                     row["is_out_of_stock"] = True
                     row["out_of_stock_reason"] = "product_oos"
                 else:
+                    # order the item
                     input_element = await page.query_selector(
                         ".product-detail-wrapper .MuiInputBase-input-395.MuiOutlinedInput-input-382.MuiInputBase-inputAdornedEnd-400.MuiOutlinedInput-inputAdornedEnd-386"
                     )
@@ -218,6 +233,7 @@ async def main():
                     await page.wait_for_timeout(5000)
                     await page.screenshot(path="screenshot.jpg", full_page=True)
 
+                # close the details pop up
                 close_icon = await page.query_selector(
                     'img[src="a8d398bb099ac1e54d401925030b9aa2.svg"]'
                 )
@@ -228,10 +244,13 @@ async def main():
                 print(row)
                 result_rows.append(row)
 
+            # opening up cart
             cart_icon = await page.query_selector('img[src="www/images/cart.svg"]')
             await cart_icon.click()
 
             await page.screenshot(path="screenshot.jpg", full_page=True)
+
+            # writing csv with new columns
             with open("result.csv", mode="w", newline="") as file:
                 fieldnames = result_rows[0].keys()
                 dict_writer = csv.DictWriter(file, fieldnames=fieldnames)
