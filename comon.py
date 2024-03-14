@@ -1,18 +1,41 @@
 import re
 import json
 
-bruh = """{
-  "confidence": "6",
-  "reasoning": "The item shown is 'Cheetos Mac'N Cheese Pasta With Flavored Sauce Flamin' Hot Flavor 2.11 Oz'. Here's the breakdown of the confidence score:
+bruh = """Given the input dictionary `{2: 'Tostitos Chunky Salsa Medium 15.5 Oz'}`, to find the key with the closest value to 'Tostitos Chunky Salsa - Medium - 15.5 oz', let's break it down according to the criteria:
 
-  - The brand name 'Cheetos' is present in the item name (2 points).
-  - The product name is close. The correct product is 'Cheetos Mac'N Cheese - Bold & Cheesy', and this item is 'Cheetos Mac'N Cheese...Flamin' Hot Flavor', so the main product name is close, but the flavor is off (1 point for closeness of product name).
-  - The flavor is not exactly correct; we are looking for 'Bold & Cheesy,' not 'Flamin' Hot' (0 points for flavor accuracy).
-  - The size is exactly correct (2 points for size accuracy).
-  - The packaging seems correct, based on what's standard for this type of product, so we will assume it's correct (1 point for packaging).
+### Brand Name:
+- **Tostitos** is present in the item name.
+  - Score: 2
 
-  Adding these up, we get a total confidence score of 6 out of a possible 10 points."
-}"""
+### Product Name:
+- The product name **"Chunky Salsa"** is exactly correct.
+  - Score: 3
+
+### Flavor:
+- The flavor **"Medium"** is exactly correct.
+  - Score: 3
+
+### Size:
+- The size **"15.5 oz"** is exactly correct.
+  - Score: 2
+
+Adding up these scores: 2 (brand name) + 3 (product name) + 3 (flavor) + 2 (size) = 10
+
+Given the criteria and calculations, the confidence level is 10 out of 10. The key that matches 'Tostitos Chunky Salsa - Medium - 15.5 oz' is 2, with a perfect match across all categories. 
+
+Here's the output in the desired JSON format:
+
+```json
+{
+  "key": "2",
+  "confidence": "10",
+  "reasoning": "The brand name, product name, flavor, and size all exactly match the criteria."
+}
+```
+"""
+
+import re
+import json
 
 def extract_json(message):
     # Normalize newlines and remove control characters except for tab
@@ -25,6 +48,8 @@ def extract_json(message):
     
     if start != -1 and end != -1 and end > start:
         json_str = sanitized_message[start:end+1]
+        # Make sure all single quotes are replaced with double quotes
+        json_str = json_str.replace("'", '"')
         try:
             json_data = json.loads(json_str)
             return json_data
@@ -35,5 +60,5 @@ def extract_json(message):
         print("No JSON found in the message")
         return {}
 
-# Testing the updated function
-print(extract_json(bruh))  # Using the original 'bruh' string for testing
+# Test the function with the provided string
+print(extract_json(bruh))

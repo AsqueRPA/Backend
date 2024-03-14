@@ -64,12 +64,12 @@ async def search(page, item_name, search_terms):
 
     DON'T include the size in the search terms you come up with
     DON'T repeat search terms
-    
+
     Just come up with ONE search term
 
     you have already tried {search_terms}
 
-    respond in the following JSON format:
+    ONLY respond in the following JSON format:
 
     {{"searchTerm": "your search term"}}
     """
@@ -151,7 +151,7 @@ async def search(page, item_name, search_terms):
     - 1pt if the size is close to the correct size, for example, if the item name is 3.25 oz, then 3 oz or 4 oz is close to the correct size
     - 0pt if the size is not close to the correct size
 
-    Add the score up and return the following JSON format:
+    Add the score up and ONLY return the following JSON format:
     {{
     "key": "the key of the item that matches {item_name}",
     "confidence": "your combined confidence level",
