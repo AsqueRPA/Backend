@@ -12,29 +12,28 @@ bruh = """{
   - The packaging seems correct, based on what's standard for this type of product, so we will assume it's correct (1 point for packaging).
 
   Adding these up, we get a total confidence score of 6 out of a possible 10 points."
-}
-"""
+}"""
 
 def extract_json(message):
     # Normalize newlines and remove control characters except for tab
     normalized_message = re.sub(r'[\r\n]+', ' ', message)  # Replace newlines with spaces
     sanitized_message = re.sub(r'[^\x20-\x7E\t]', '', normalized_message)  # Remove non-printable chars
 
-    json_regex = r"\{[\s\S]*?\}"  # Non-greedy match for content inside braces
-    matches = re.findall(json_regex, sanitized_message)
-
-    if matches:
-        for match in matches:
-            try:
-                json_data = json.loads(match)
-                return json_data  # Return the first valid JSON object
-            except json.JSONDecodeError as e:
-                print(f"Error decoding JSON: {e}")
-        print("Valid JSON not found in the matches")
-        return {}
+    # Attempt to find JSON starting and ending points without nested checks
+    start = sanitized_message.find('{')
+    end = sanitized_message.rfind('}')
+    
+    if start != -1 and end != -1 and end > start:
+        json_str = sanitized_message[start:end+1]
+        try:
+            json_data = json.loads(json_str)
+            return json_data
+        except json.JSONDecodeError as e:
+            print(f"Error decoding JSON: {e}")
+            return {}
     else:
         print("No JSON found in the message")
         return {}
 
-    
-print(extract_json(bruh))
+# Testing the updated function
+print(extract_json(bruh))  # Using the original 'bruh' string for testing
