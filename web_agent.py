@@ -110,7 +110,7 @@ class JoshyTrain:
         self.tag_to_xpath = tag_to_xpath
         self.page_text = page_text
 
-    def extract_json(message):
+    def extract_json(self, message):
         # Normalize newlines and remove control characters except for tab
         normalized_message = re.sub(r'[\r\n]+', ' ', message)  # Replace newlines with spaces
         sanitized_message = re.sub(r'[^\x20-\x7E\t]', '', normalized_message)  # Remove non-printable chars
