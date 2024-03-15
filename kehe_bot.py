@@ -12,6 +12,12 @@ load_dotenv()
 port = os.getenv("PORT")
 
 
+"""
+UPC and if UPC doesn't work I'll see if there's a different UPC for the item online and try that
+And if that doesn't work, I'll do it like a word search but I don't spend more than like two minutes. 
+If I'm doing that I'll just say that I didn't find the item
+"""
+
 async def main():
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=False, slow_mo=50)
@@ -32,46 +38,16 @@ async def main():
         with open("kehe.csv", mode="r") as file:
             dict_reader = csv.DictReader(file)
             for row in dict_reader:
-                search_terms = []
                 row["updated_price"] = ""
                 row["updated_upc"] = ""
                 item_name = row["product_name"]
-                # item_name = "Cheetos Crunchy - Cheddar Jalapeno - 3.25 oz"
+                upc = row["upc"]
 
                 joshyTrain = JoshyTrain(page)
-            #     search_instruction = """
-            # when you are searching for an item, try different search terms, for example: 
-            # if the full name is Cheetos Crunchy - Cheddar Jalapeno - 3.25 oz, you can try the following
-            # - Cheetos Crunchy Cheddar Jalapeno
-            # - Cheetos Crunchy
-            # - Cheddar Jalapeno
-            # - Cheetos
-            # - MAKE SURE TO ALSO TRY OTHER COMBINATION OF THE WORDS OR JUST THE BRAND NAME AS WELL
-            # """
-            #     while True:
-            #         try:
-            #             response = await joshyTrain.chat(
-            #                 f"""{search_instruction}, DO: INPUT different search terms into the search bar for {item_name}, you have already tried {search_terms}.
-
-            #                 Just try once and then return the following JSON format: 
-            #                 {{"searchTerm": "exact search term you put as the input", "itemsFound": "yes" or "no"}}
-
-            #                 the above is your ONLY OPTION AFTER ATTEMPTING TO INPUT INTO THE SEARCH BAR, never output {{"searchTerm": "exact search term you put as the input", "itemsFound": "yes" or "no"}} if you haven't outputted {{"input": {{"select": "ID", "text": "exact search term you put as the input"}}}}
-
-            #                 if you don't follow the above, then the program will not work.
-            #                 """
-            #             )
-            #             data = joshyTrain.extract_json(response)
-            #             if data and "searchTerm" in data:
-            #                 search_term = data["searchTerm"]
-            #                 search_terms.append(search_term)
-            #                 if str(data["itemsFound"]).lower() == "yes":
-            #                     break
-            #         except Exception as e:
-            #             print(e)
-            #             continue
-                
-                await joshyTrain.chat(f"search {item_name} in the search bar")
+                if upc:
+                    await joshyTrain.chat(f"search {upc} in the search bar")
+                else:
+                    await joshyTrain.chat(f"search {item_name} in the search bar")
                 response = await joshyTrain.chat(
                     f"""tell me the name of the item in JSON format that is most similar to {item_name}.
                     Consider similarities in brand, product name, flavor, and size. 

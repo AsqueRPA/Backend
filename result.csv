@@ -1,2 +1,50 @@
-product_name,supplier_name,total_packs_ordered,pack_size,pack_price,PO_cost,total_packs_received,receipt_pack_price,received_cost,upc,store_id,store_name,product_id,restock_order_id,is_out_of_stock,out_of_stock_reason,updated_price,updated_upc
-Funyuns - Original - 2.125 oz,Frito Lay,3,1,1.88,5.64,,,,,2,USC,1956,13421,FALSE,,,63286
+product_name,supplier_name,total_packs_ordered,pack_size,pack_price,PO_cost,total_packs_received,receipt_pack_price,received_cost,upc,store_id,store_name,product_id,restock_order_id,is_out_of_stock,out_of_stock_reason,name_ordered
+Tostitos Chunky Salsa - Medium - 15.5 oz,Frito Lay,5,1,3,15,,,,000284003775,5,UofA,346,13751,false,,Tostitos Chunky Salsa Medium 15.5 Oz
+Tostitos Salsa Con Queso - Medium - 15.0 oz,Frito Lay,3,1,3.75,11.25,,,,000284004239,5,UofA,2679,13751,false,,Tostitos Flavored Dip Medium Salsa Con Queso 15 Oz
+Doritos - Spicy Sweet Chili - 2.75 oz,Frito Lay,3,1,1.88,5.64,,,,765936482630,5,UofA,1948,13751,false,,Doritos Tortilla Chips Spicy Sweet Chili Flavored 2 3/4 Oz
+Quaker Instant Oatmeal - Maple & Brown Sugar - 1.69 oz,Frito Lay,10,1,1.04,10.4,,,,,5,UofA,7325,13751,false,,Quaker Instant Oatmeal Maple & Brown Sugar 1.69 Oz
+Fritos - Original - 3.5 oz,Frito Lay,5,1,1.88,9.4,,,,028400355278,5,UofA,332,13751,false,,Fritos Corn Chips The Original 3.5 Oz
+Doritos - Flamin' Hot Nacho - 2.75 oz,Frito Lay,10,1,1.88,18.8,,,,000000000000,5,UofA,50,13751,false,,Doritos Flavored Tortilla Chips Flamin' Hot Nacho Flavored 2 3/4 Oz
+Tostitos - Hint Of Lime - 11.0 oz,Frito Lay,5,1,4.41,22.05,,,,028400517942,5,UofA,206,13751,false,,Tostitos Flavored Tortilla Chips Hint of Lime 11 Oz
+Sun Chips - French Onion - 7.0 oz,Frito Lay,10,1,3.3,33,,,,028400152242,5,UofA,347,13751,True,not_found,SunChips Flavored Whole Grain Snacks French Onion 7 Oz
+Tostitos - Original Scoops - 10.0 oz,Frito Lay,10,1,1.88,18.8,,,,,5,UofA,479,13751,false,,Tostitos Scoops Tortilla Chips Original 10 Oz
+Chester's Fries - Flamin' Hot - 3.625 oz,Frito Lay,20,1,1.88,37.6,,,,028400331524,5,UofA,1017,13751,false,,Chester's Fries Corn Snacks Flamin' Hot Flavored 3 5/8 Oz
+Munchies - Flamin' Hot - 3.0 oz,Frito Lay,10,1,1.88,18.8,,,,325434534534,5,UofA,1018,13751,True,product_oos,Munchies Snack Mix Flamin' Hot Flavored 3 Oz
+Doritos Dinamita - Chili Limon - 4.0 oz,Frito Lay,10,1,1.88,18.8,,,,028400491518,5,UofA,1891,13751,false,,Doritos Dinamita Rolled Tortilla Chips Chile Limon Flavored 4 Oz
+Cheetos Puffs - Flamin' Hot - 3.0 oz,Frito Lay,10,1,1.88,18.8,,,,028400329132,5,UofA,1892,13751,True,not_found,Cheetos Puffs Cheese Flavored Snacks Flamin' Hot Flavored 2 5/8 Oz
+Ruffles - Sour Cream & Onion - 2.5 oz,Frito Lay,10,1,1.88,18.8,,,,284003244100,5,UofA,1894,13751,false,,Ruffles Potato Chips Sour Cream & Onion Flavored 2 1/2 Oz
+Funyuns - Original - 2.125 oz,Frito Lay,10,1,1.88,18.8,,,,,5,UofA,1956,13751,false,,Funyuns Onion Flavored Rings 2 1/8 Oz
+Lay's - Limon - 2.625 oz,Frito Lay,10,1,1.88,18.8,,,,000284004435,5,UofA,1957,13751,false,,Lay's Potato Chips Limon Flavored 2 5/8 Oz
+Sabritones - Chili Lime - 2.75 oz,Frito Lay,10,1,1.88,18.8,,,,,5,UofA,1958,13751,false,,Sabritones Puffed Wheat Snacks Chile & Lime Flavored 2 3/4 Oz
+Cheetos Crunchy - Flamin' Hot Limon - 3.25 oz,Frito Lay,10,1,1.88,18.8,,,,028400329507,5,UofA,1960,13751,false,,Cheetos Crunchy Cheese Flavored Snacks Flamin' Hot Limon Flavored 3 1/4 Oz
+Cheetos Crunchy - Flamin' Hot - 3.25 oz,Frito Lay,10,1,1.88,18.8,,,,,5,UofA,1961,13751,false,,Cheetos Crunchy Cheese Flavored Snacks Flamin' Hot Flavored 3 1/4 Oz
+Cheetos Crunchy - Xxtra Flamin' Hot - 3.25 oz,Frito Lay,10,1,1.88,18.8,,,,,5,UofA,1963,13751,false,,Cheetos Crunchy Cheese Flavored Snacks XXTRA Flamin' Hot Flavored 3 1/4 Oz
+Fritos Flavor Twists - Honey Bbq - 3.5 oz,Frito Lay,10,1,1.88,18.8,,,,,5,UofA,1969,13751,false,,Fritos Flavor Twists Corn Snacks Honey BBQ Flavored 3.5 Oz
+Ruffles - Cheddar & Sour Cream - 2.5 oz,Frito Lay,10,1,1.88,18.8,,,,032442113627,5,UofA,1972,13751,false,,Ruffles Potato Chips Cheddar & Sour Cream Flavored 2 1/2 Oz
+Turbos Flamas - Corn Chips - 4.0 oz,Frito Lay,10,1,1.88,18.8,,,,,5,UofA,1973,13751,false,,Sabritas Flavored Corn Snacks Turbos Flamas 4 Oz
+Cheetos Puffs - Flamin' Hot - 8.0 oz,Frito Lay,10,1,1.88,18.8,,,,,5,UofA,2344,13751,false,,Cheetos Puffs Cheese Flavored Snacks Flamin' Hot Flavored 8 Oz
+Cheetos Crunchy - Cheddar Jalapeno - 3.25 oz,Frito Lay,10,1,1.88,18.8,,,,,5,UofA,2823,13751,false,,Cheetos Crunchy Cheese Flavored Snacks Cheddar Jalapeno Flavored 3 1/4 Oz
+Tostitos Salsa - Avocado Salsa - 15.0 oz,Frito Lay,5,1,3.75,18.75,,,,028400309448,5,UofA,3357,13751,True,product_oos,Tostitos Dips Avocado Salsa 15 Oz
+Lay's - Sour Cream & Onion - 2.625 oz,Frito Lay,10,1,1.81,18.1,,,,028400324212,5,UofA,3359,13751,false,,Lay's Potato Chips Sour Cream & Onion Flavored 2 5/8 Oz
+Lay's - Salt & Vinegar - 2.625 oz,Frito Lay,10,1,1.74,17.4,,,,028400323857,5,UofA,3360,13751,false,,Lay's Potato Chips Salt & Vinegar Flavored 2 5/8 Oz
+Cheetos Popcorn - Flamin' Hot - 2.0 oz,Frito Lay,10,1,1.88,18.8,,,,028400305907,5,UofA,4146,13751,True,not_found,Cheetos Popcorn Flavored Popcorn Flamin' Hot Flavored 6 1/2 Oz
+Cracker Jack - The Original - 4.12 oz,Frito Lay,10,1,1.88,18.8,,,,028400172516,5,UofA,4147,13751,false,,Cracker Jack Caramel Coated Popcorn & Peanuts The Original 4 1/8 Oz
+Doritos - Nacho Cheese - 2.5 oz,Frito Lay,15,1,1.88,28.2,,,,028400357012,5,UofA,1896,13751,True,not_found,Doritos Tortilla Chips Nacho Cheese Flavored 2 3/4 Oz
+Ruffles - Queso - 2.5 oz,Frito Lay,5,1,1.74,8.7,,,,028400324434,5,UofA,1270,13751,false,,Ruffles Potato Chips Queso Cheese Flavored 2 1/2 Oz
+Cheetos Crunchy - Tangy Chili Fusion - 3.25 oz,Frito Lay,5,1,1.88,9.4,,,,,5,UofA,6475,13751,True,not_found,Cheetos Crunchy Cheese Flavored Snacks 3 1/4 Oz
+Popcorners - White Cheddar - 3.0 oz,Frito Lay,10,1,1.65,16.5,,,,,5,UofA,7066,13751,True,product_oos,PopCorners Popped Corn Snacks White Cheddar
+Popcorners - Kettle Corn - 3.0 oz,Frito Lay,10,1,1.65,16.5,,,,,5,UofA,7067,13751,false,,PopCorners Popped Corn Snack Kettle Corn
+Popcorners - Sea Salt - 3.0 oz,Frito Lay,10,1,1.94,19.4,,,,,5,UofA,7068,13751,True,product_oos,PopCorners Sea Salt Corn Snacks
+Popcorners - Spicy Queso - 3.0 oz,Frito Lay,10,1,1.65,16.5,,,,,5,UofA,6800,13751,false,,PopCorners Popped Corn Snacks Spicy Queso 3oz
+Simply Cheetos Puffs - White Cheddar - 2.5 oz,Frito Lay,10,1,1.88,18.8,,,,,5,UofA,6001,13751,True,not_found,Cheetos Simply Puffs Cheese Flavored Snacks White Cheddar 2 1/2 Oz
+Cheetos Crunchy  - Buffalo - 3.25 oz,Frito Lay,10,1,1.88,18.8,,,,,5,UofA,7852,13751,false,,Cheetos Crunchy Cheese Flavored Snacks Buffalo Naturally And Artificially Flavored 3.25 Oz
+Cheetos Mac'N Cheese - Bold & Cheesy - 2.11 oz,Frito Lay,5,1,1.64,8.2,,,,,5,UofA,7849,13751,True,not_found,Cheetos Mac'N Cheese Pasta With Flavored Sauce Flamin' Hot Flavor 2.11 Oz
+Smartfood Popcorn - Simply Sea Salt - 1.62 oz,Frito Lay,10,1,1.88,18.8,,,,,5,UofA,7850,13751,True,product_oos,Smartfood Popcorn Simply Sea Salt 1 5/8 Oz
+Smartfood - White Cheddar Popcorn - 2.0 oz,Frito Lay,10,1,1.88,18.8,,,,028400331791,5,UofA,5106,13751,false,,Smartfood Popcorn White Cheddar Flavored 2 Oz
+Popcorners - Cinnamon Crunch - 3.0 oz,Frito Lay,10,1,1.88,18.8,,,,,5,UofA,7523,13751,false,,Popcorners Cinnamon Crunch Flavored 3 oz
+Doritos - Nacho Cheese - 2.75 oz,Frito Lay,10,1,1.88,18.8,,,,028400516464,5,UofA,52,13751,True,product_oos,Doritos Tortilla Chips Nacho Cheese Flavored 2 3/4 Oz
+Doritos - Cool Ranch - 2.75 oz,Frito Lay,10,1,1.88,18.8,,,,457012003071,5,UofA,1026,13751,false,,Doritos Tortilla Chips Cool Ranch Flavored 2 3/4 Oz
+Doritos - Flamas - 2.75 oz,Frito Lay,10,1,1.88,18.8,,,,028400325165,5,UofA,1053,13751,false,,Doritos Tortilla Chips Flamas Flavored 2.75 Oz
+Doritos - Flamin Hot Limon - 2.75 oz,Frito Lay,10,1,1.88,18.8,,,,000284003828,5,UofA,4965,13751,false,,Doritos Tortilla Chips Flamin' Hot Limon Flavored 2 3/4 Oz
+Funyuns - Flamin' Hot - 2.12 oz,Frito Lay,10,1,1.88,18.8,,,,,5,UofA,917,13751,false,,Funyuns Onion Flavored Rings Flamin' Hot 2 1/8 Oz
+Tostitos - Restaurant Style - 12.0 oz,Frito Lay,10,1,4.41,44.1,,,,028400517997,5,UofA,4804,13751,false,,Tostitos Tortilla Chips Original Restaurant Style 12 Oz

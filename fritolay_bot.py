@@ -54,6 +54,8 @@ async def search(page, item_name, search_terms):
                 if len(search_terms) > maximum_search_terms:
                     response = await chat(
                         f"""for {item_name})
+        Use your knowledge of the product to identify the correct brand name (for example Sun Chips is a typo of SunChips so you should use SunChips)
+        Munchies - Flamin' Hot - 3.0 oz, the brand is just Munchies
         ONLY respond in the following JSON format:
 
         {{"searchTerm": "the brand name of the item"}}
@@ -64,11 +66,15 @@ async def search(page, item_name, search_terms):
                         f"""
         come up with different search terms for {item_name}
         for example: 
+        Use your knowledge of the product to come up with different search terms. (For example Sun Chips is a typo of SunChips)
         if the full name is Cheetos Crunchy - Cheddar Jalapeno - 3.25 oz, you can try the following
+        - Cheetos Crunchy Cheddar Jalapeno (brand + product name + flavor)
         - Cheetos Crunchy (brand + product name)
         - Cheddar Jalapeno (flavor)
-        - Cheetos (just brand, this is usually enough)
+        - Cheetos (brand)
 
+        FOLLOW THE PATTERNS OF THE EXAMPLES ABOVE BEFORE YOU TRY TO COME UP WITH YOUR OWN SEARCH TERMS
+        DON"T TRY YOUR OWN SEARCH TERMS UNTIL YOU HAVE TRIED THE PATTERNS ABOVE
         DON'T include the size in the search terms you come up with
         DON'T repeat search terms
 
@@ -78,14 +84,14 @@ async def search(page, item_name, search_terms):
 
         ONLY respond in the following JSON format:
 
-        {{"searchTerm": "your search term"}}
+        {{"combination logic": "brand + product name + flavor" / "brand + product name" / "flavor" / "brand" / "your own search term", "searchTerm": "your search term"}}
         """
                     )
                 # the search term is appended into a list that is passed into gpt so that it knows to not repeat search terms
                 data = joshyTrain.extract_json(response)
                 if data and "searchTerm" in data:
                     search_term = data["searchTerm"]
-                    search_terms.append(search_term)
+                    search_terms.append(data)
 
                     # Manual Search
                     await page.get_by_placeholder("Search Product").fill(search_term)
@@ -139,10 +145,6 @@ async def search(page, item_name, search_terms):
 
             give your confidence level on this from 0-10, which is your combined score from the following criteria:
 
-    the brand name:
-    - 2pt if the brand name is in the item name
-    - 0pt if the brand name is not in the item name
-
     the product name:
     - 3pts if the product name is exactly correct 
     - 2pts if the product name is close to the correct product name, for example, if the item name is Cheetos Crunchy - Cheddar Jalapeno - 3.25 oz, then Cheetos is close to the correct product name (Cheetos Crunchy is the correct product name)
@@ -151,33 +153,42 @@ async def search(page, item_name, search_terms):
 
     the flavor:
     - 3pts if the flavor is exactly correct 
-    - 2pts if the flavor is close to the correct flavor, for example, if the item name is Cheetos Crunchy - Cheddar Jalapeno - 3.25 oz, then Jalapeno or Cheddar is close to the correct flavor (Cheddar Jalapeno is the correct flavor)
+    - 2pts if the flavor is close to the correct flavor, for example, if the item name is Cheetos Crunchy - Cheddar Jalapeno - 3.25 oz, then Jalapeno is close to the correct flavor (Cheddar Jalapeno is the correct flavor), only having Cheedar is not close to the correct flavor because the entire line of snacks is cheese flavored
     - 1pt if the flavor is somewhat close to the correct flavor
     - 0pt if the flavor is not close to the correct flavor
 
     the size:
-    - 2pts if the size is exactly correct 
-    - 1pt if the size is close to the correct size, for example, if the item name is 3.25 oz, then 3 oz or 4 oz is close to the correct size
+    - 4pts if the size is exactly correct 
+    - 3pts if the size is close to the correct size, if the size difference is within 0.5 oz
+    - 2pt if the size is somewhat close to the correct size, if the size difference is within 1 oz
+    - 1pt if the size is somewhat close to the correct size, if the size difference is within 2 oz
     - 0pt if the size is not close to the correct size
 
     Add the score up and ONLY return the following JSON format:
     {{
     "key": "the key of the item that matches {item_name}",
+    "reasoning": "your reasoning",
     "confidence": "your combined confidence level",
-    "reasoning": "your reasoning"
     }}
 
     have your explanation inside the JSON, your response should only contain the JSON and NOTHING ELSE
     """
             response = await chat(prompt)
             data = joshyTrain.extract_json(response)
+            confidence = int(data["confidence"])
             i = int(data["key"])
-            await page.screenshot(path="screenshot.jpg", full_page=True)
-            # continue searching if confidence did not meet criteria
-            if int(data["confidence"]) < minimum_confidence:
+            prompt = f"""Are these two the same item? {item_name} and {card_text_map[i]}, small difference in size within 1oz is okay. Respond with the following JSON format: {{"answer": "true or false", "reasoning": "your reasoning"}}"""
+            response = await chat(prompt)
+            data = joshyTrain.extract_json(response)
+            if data["answer"] == "true":
+                await page.screenshot(path="screenshot.jpg", full_page=True)
+                # continue searching if confidence did not meet criteria
+                if confidence >= minimum_confidence:
+                    return i
+            if len(search_terms) < minimum_search_terms:
                 return await search(page, item_name, search_terms)
             else:
-                return i
+                return 0
         except Exception as e:
             if len(search_terms) < minimum_search_terms:
                 return await search(page, item_name, search_terms)
@@ -202,6 +213,10 @@ async def main():
         file = parser.parse_args().f
         username = parser.parse_args().u
         password = parser.parse_args().p
+
+        # file = "finished_order.csv"
+        # username = "max@duffl.com"
+        # password = "dufflfrito1071"
 
         print(file, username, password)
 
@@ -228,7 +243,7 @@ async def main():
             # loop through rows
             for row in dict_reader:
                 item_name = row["product_name"]
-                # item_name = "Cheetos Crunchy - Cheddar Jalapeno - 3.25 oz"
+                # item_name = "Sun Chips - French Onion - 7.0 oz"
 
                 # search function returns index of "found" item, index starts from 1
                 i = await search(page, item_name, [])
