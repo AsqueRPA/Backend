@@ -214,7 +214,7 @@ async def main():
         username = parser.parse_args().u
         password = parser.parse_args().p
 
-        # file = "finished_order.csv"
+        # file = "orders.csv"
         # username = "max@duffl.com"
         # password = "dufflfrito1071"
 
@@ -336,7 +336,7 @@ async def main():
             await page.screenshot(path="screenshot.jpg", full_page=True)
 
             # writing csv with new columns
-            with open("result.csv", mode="w", newline="") as file:
+            with open("./result/" + file, mode="w", newline="") as file:
                 fieldnames = result_rows[0].keys()
                 dict_writer = csv.DictWriter(file, fieldnames=fieldnames)
                 dict_writer.writeheader()

@@ -10,13 +10,14 @@ let mailTransporter = nodemailer.createTransport({
   },
 });
 
-const sendEmail = async (subject, text) => {
+const sendEmail = async (subject, text, attachments = []) => {
   try {
     let mailDetails = {
       from: "hugozhan0802@gmail.com",
       to: "hugozhan0802@gmail.com",
       subject: subject,
       text: text,
+      attachments: attachments, // Add attachments here
     };
     return await mailTransporter.sendMail(mailDetails);
   } catch (err) {

@@ -1,6 +1,7 @@
 import Bull from "bull";
 import dotenv from "dotenv";
 import { spawn } from "child_process";
+import { sendEmail } from "./email";
 
 dotenv.config();
 
@@ -51,7 +52,7 @@ jobQueue.process(async (job) => {
   }
 });
 
-function scheduleFritoLayJob(filePath, username, password) {
+function scheduleFritoLayJob(filePath, username, password, email) {
   jobQueue
     .add({ filePath, username, password, type: "fritolay" })
     .then((job) => {
@@ -59,6 +60,12 @@ function scheduleFritoLayJob(filePath, username, password) {
         .finished()
         .then(async () => {
           console.log(`FritoLay job ${job.id} completed`);
+          sendEmail(
+            email,
+            "FritoLay Job Completed",
+            "Your FritoLay job has completed. Please check your email for the results.",
+            ["../results/" + filePath]
+          );
         })
         .catch((error) => {
           console.error(`FritoLay job ${job.id} failed`, error);
