@@ -100,7 +100,7 @@ async def search(page, item_name, search_terms):
 
                     # Validate if the element exists
                     if no_record_element:
-                        if len(search_terms) > maximum_search_terms:
+                        if len(search_terms) > maximum_search_terms + 1:
                             return 0
                         continue
                     else:
