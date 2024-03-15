@@ -55,12 +55,12 @@ async def search(page, item_name, search_terms):
                 # gpt returns the search term and a boolean representing whether it found product with that search term
                 response = await chat(
                     f"""
-    come up with different search terms for {item_name} for example: 
+    come up with different search terms for {item_name}
+    for example: 
     if the full name is Cheetos Crunchy - Cheddar Jalapeno - 3.25 oz, you can try the following
     - Cheetos Crunchy (brand + product name)
     - Cheddar Jalapeno (flavor)
-    - Cheetos (just brand)
-    - TRY THE ABOVE BEFORE TRYING OTHER COMBINATIONS usually just the brand will work
+    - Cheetos (just brand, this is usually enough)
 
     DON'T include the size in the search terms you come up with
     DON'T repeat search terms
@@ -165,7 +165,7 @@ async def search(page, item_name, search_terms):
             i = int(data["key"])
             await page.screenshot(path="screenshot.jpg", full_page=True)
             # continue searching if confidence did not meet criteria
-            if int(data["confidence"]) <= minimum_confidence:
+            if int(data["confidence"]) < minimum_confidence:
                 return await search(page, item_name, search_terms)
             else:
                 return i
@@ -195,6 +195,8 @@ async def main():
         file = parser.parse_args().f
         username = parser.parse_args().u
         password = parser.parse_args().p
+
+        print(file, username, password)
 
         browser = await p.chromium.launch(headless=False, slow_mo=50)
 
