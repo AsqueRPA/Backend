@@ -46,7 +46,6 @@ async def search(page, item_name, search_terms):
     try:
         joshyTrain = JoshyTrain(page)
         minimum_confidence = 7
-        minimum_search_terms = 3
         maximum_search_terms = 7
         while True:
 
@@ -133,7 +132,7 @@ async def search(page, item_name, search_terms):
             )  # Wait for the modal to close, adjust as needed
 
         if len(card_text_map) == 0:
-            if len(search_terms) <= minimum_search_terms:
+            if len(search_terms) <= maximum_search_terms:
                 return await search(page, item_name, search_terms)
             else:
                 return 0
@@ -177,20 +176,28 @@ async def search(page, item_name, search_terms):
             data = joshyTrain.extract_json(response)
             confidence = int(data["confidence"])
             i = int(data["key"])
-            prompt = f"""Are these two the same item? {item_name} and {card_text_map[i]}, small difference in size within 1oz is okay. Respond with the following JSON format: {{"answer": "true or false", "reasoning": "your reasoning"}}"""
-            response = await chat(prompt)
+            item_div = await page.query_selector(
+                f".MuiGrid-root-128.product-tile.MuiGrid-item-130.MuiGrid-grid-xs-6-168.MuiGrid-grid-sm-4-180.MuiGrid-grid-md-4-194.MuiGrid-grid-lg-3-207:nth-of-type({i}) .productlist-img"
+            )
+            await item_div.click()
+            prompt = f"""Are these two the same item? {item_name} and {card_text_map[i]}, little difference in size by 1oz or smaller is okay. Respond with the following JSON format: {{"answer": "true or false", "reasoning": "your reasoning"}}"""
+            response = await joshyTrain.chat(prompt)
+            close_icon = await page.query_selector(
+                        'img[src="a8d398bb099ac1e54d401925030b9aa2.svg"]'
+                    )
+            await close_icon.click()
             data = joshyTrain.extract_json(response)
             if data["answer"] == "true":
                 await page.screenshot(path="screenshot.jpg", full_page=True)
                 # continue searching if confidence did not meet criteria
                 if confidence >= minimum_confidence:
                     return i
-            if len(search_terms) < minimum_search_terms:
+            if len(search_terms) < maximum_search_terms:
                 return await search(page, item_name, search_terms)
             else:
                 return 0
         except Exception as e:
-            if len(search_terms) < minimum_search_terms:
+            if len(search_terms) < maximum_search_terms:
                 return await search(page, item_name, search_terms)
             else:
                 return 0
@@ -210,7 +217,7 @@ async def main():
         parser.add_argument("-p", type=str)
 
         # Parse the arguments
-        file = parser.parse_args().f
+        fileName = parser.parse_args().f
         username = parser.parse_args().u
         password = parser.parse_args().p
 
@@ -218,7 +225,7 @@ async def main():
         # username = "max@duffl.com"
         # password = "dufflfrito1071"
 
-        print(file, username, password)
+        print(fileName, username, password)
 
         browser = await p.chromium.launch(headless=False, slow_mo=50)
 
@@ -238,7 +245,7 @@ async def main():
         result_rows = []
 
         # opening csv
-        with open(file, mode="r") as file:
+        with open(fileName, mode="r") as file:
             dict_reader = csv.DictReader(file)
             # loop through rows
             for row in dict_reader:
@@ -330,13 +337,17 @@ async def main():
                 result_rows.append(row)
 
             # opening up cart
-            cart_icon = await page.query_selector('img[src="www/images/cart.svg"]')
-            await cart_icon.click()
+            try:
+                cart_icon = await page.query_selector('img[src="www/images/cart.svg"]')
+                await cart_icon.click()
 
-            await page.screenshot(path="screenshot.jpg", full_page=True)
+                await page.screenshot(path="screenshot.jpg", full_page=True)
+            except Exception as e:
+                print(e)
 
+            fileName = fileName.split("/")[1] + ".csv"
             # writing csv with new columns
-            with open("./result/" + file, mode="w", newline="") as file:
+            with open("./results/" + fileName, mode="w", newline="") as file:
                 fieldnames = result_rows[0].keys()
                 dict_writer = csv.DictWriter(file, fieldnames=fieldnames)
                 dict_writer.writeheader()
