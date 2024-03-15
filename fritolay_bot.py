@@ -41,45 +41,52 @@ async def chat(prompt):
     print("Assistant:", message_text)
     return message_text
 
+
 async def search(page, item_name, search_terms):
     try:
         joshyTrain = JoshyTrain(page)
         minimum_confidence = 7
         minimum_search_terms = 3
-        maximum_search_terms = 10
+        maximum_search_terms = 7
         while True:
-            if len(search_terms) > maximum_search_terms:
-                return 0
+
             try:
-                # prompt gpt to search different search terms
-                # gpt returns the search term and a boolean representing whether it found product with that search term
-                response = await chat(
-                    f"""
-    come up with different search terms for {item_name}
-    for example: 
-    if the full name is Cheetos Crunchy - Cheddar Jalapeno - 3.25 oz, you can try the following
-    - Cheetos Crunchy (brand + product name)
-    - Cheddar Jalapeno (flavor)
-    - Cheetos (just brand, this is usually enough)
+                if len(search_terms) > maximum_search_terms:
+                    response = await chat(
+                        f"""for {item_name})
+        ONLY respond in the following JSON format:
 
-    DON'T include the size in the search terms you come up with
-    DON'T repeat search terms
+        {{"searchTerm": "the brand name of the item"}}
+       """
+                    )
+                else:
+                    response = await chat(
+                        f"""
+        come up with different search terms for {item_name}
+        for example: 
+        if the full name is Cheetos Crunchy - Cheddar Jalapeno - 3.25 oz, you can try the following
+        - Cheetos Crunchy (brand + product name)
+        - Cheddar Jalapeno (flavor)
+        - Cheetos (just brand, this is usually enough)
 
-    Just come up with ONE search term
+        DON'T include the size in the search terms you come up with
+        DON'T repeat search terms
 
-    you have already tried {search_terms}
+        Just come up with ONE search term
 
-    ONLY respond in the following JSON format:
+        you have already tried {search_terms}
 
-    {{"searchTerm": "your search term"}}
-    """
-                )
+        ONLY respond in the following JSON format:
+
+        {{"searchTerm": "your search term"}}
+        """
+                    )
                 # the search term is appended into a list that is passed into gpt so that it knows to not repeat search terms
                 data = joshyTrain.extract_json(response)
                 if data and "searchTerm" in data:
                     search_term = data["searchTerm"]
                     search_terms.append(search_term)
-                    
+
                     # Manual Search
                     await page.get_by_placeholder("Search Product").fill(search_term)
                     await page.keyboard.press("Enter")
@@ -87,10 +94,14 @@ async def search(page, item_name, search_terms):
                     await page.screenshot(path="screenshot.jpg", full_page=True)
 
                     # Check for the element
-                    no_record_element = await page.query_selector('h1:text("No Record Found")')
+                    no_record_element = await page.query_selector(
+                        'h1:text("No Record Found")'
+                    )
 
                     # Validate if the element exists
                     if no_record_element:
+                        if len(search_terms) > maximum_search_terms:
+                            return 0
                         continue
                     else:
                         break
@@ -99,8 +110,6 @@ async def search(page, item_name, search_terms):
             except Exception as e:
                 print(e)
                 continue
-
-        
 
         # return 2
 
@@ -189,8 +198,6 @@ async def main():
         parser.add_argument("-u", type=str)
         parser.add_argument("-p", type=str)
 
-
-
         # Parse the arguments
         file = parser.parse_args().f
         username = parser.parse_args().u
@@ -229,7 +236,9 @@ async def main():
 
                 if not i:
                     print("not_found")
+                    row["is_out_of_stock"] = True
                     row["out_of_stock_reason"] = "not_found"
+                    result_rows.append(row)
                     continue
 
                 try:
@@ -245,10 +254,15 @@ async def main():
                     await page.wait_for_timeout(2000)
                     await page.screenshot(path="screenshot.jpg", full_page=True)
 
-                    # get the product details div and get upc and price
-                    product_details_div = await page.query_selector(
-                        ".MuiGrid-root-128.product-detail-wrapper-inner"
-                    )
+
+                    await page.wait_for_selector(".product-title", state="visible")
+                    modal_text = await page.inner_text(".product-title")
+                    row["name_ordered"] = modal_text
+
+                    # # get the product details div and get upc and price
+                    # product_details_div = await page.query_selector(
+                    #     ".MuiGrid-root-128.product-detail-wrapper-inner"
+                    # )
 
                     ## probably dont need this right now
                     # upc_number = await product_details_div.query_selector(
