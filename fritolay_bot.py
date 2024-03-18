@@ -15,13 +15,8 @@ model = OpenAI()
 model.timeout = 30
 
 # TODO:
-# somtimes bot will navigate away / click random stuff for no reason
-# wait for more timeout to close boxes and stuff
-# still trying to input into 35
 
-# things that could be fixed but not right now
-# jars need to be ordered in multiples of 4
-# cart cannot exceed 1k so make the bot stop and output csv showing where it left off
+# gpt cant do math for some reason, it thinks 2.65 and 3 are more than 1 oz size difference
 
 
 async def chat(prompt):
@@ -249,6 +244,8 @@ async def main():
             dict_reader = csv.DictReader(file)
             # loop through rows
             for row in dict_reader:
+                row["name_ordered"] = ""
+                row["actions"] = []
                 item_name = row["product_name"]
                 # item_name = "Sun Chips - French Onion - 7.0 oz"
 

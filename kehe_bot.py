@@ -114,28 +114,11 @@ async def main():
                     #         print(e)
                     #     await page.locator('role=button[name="Add to Cart"]').click()
 
-                    brand_name_selector = 'div[data-automation-id="edo-products-list-item-supplier-name"] strong'
-                    product_name_selector = (
-                        'div[_ngcontent-ng-c2225601486][data-automation-id="edo-products-list-item-product-name"]'
-                    )
+                    brand_name = await page.inner_text('div[data-automation-id="edo-products-list-item-supplier-name"] strong')
+                    product_name = await page.inner_text('span[data-automation-id="edo-products-list-item-product-name"]')
+                    product_size = await page.inner_text('div[_ngcontent-ng-c2225601486]:nth-of-type(2)')
 
-                    brand_name_element = await page.query_selector(brand_name_selector)
-                    brand_name = (
-                        await brand_name_element.text_content()
-                        if brand_name_element
-                        else "[Brand name not found]"
-                    )
-
-                    product_name_element = await page.query_selector(
-                        product_name_selector
-                    )
-                    product_name = (
-                        await product_name_element.text_content()
-                        if product_name_element
-                        else "[Product name not found]"
-                    )
-
-                    row["name_ordered"] = brand_name + " " + product_name
+                    row["name_ordered"] = brand_name + " " + product_name + " " + product_size
                     print(row["name_ordered"])
                 else:
                     await search_bar.fill(item_name)
@@ -144,8 +127,9 @@ async def main():
                     await page.wait_for_timeout(3000)
                     brand_name_selector = 'div[data-automation-id="edo-products-list-item-supplier-name"] strong'
                     product_name_selector = (
-                        'div[data-automation-id="edo-products-list-item-product-name"]'
+                        'span[data-automation-id="edo-products-list-item-product-name"]'
                     )
+                    product_size_selector = 'div[_ngcontent-ng-c2225601486]:nth-of-type(2)'
 
                     brand_name_elements = await page.query_selector_all(
                         brand_name_selector
@@ -153,10 +137,13 @@ async def main():
                     product_name_elements = await page.query_selector_all(
                         product_name_selector
                     )
+                    product_size_elements = await page.query_selector_all(
+                        product_size_selector
+                    )
 
                     all_items = []
 
-                    for i in range(min(25, len(brand_name_elements))):
+                    for i in range(1, min(25, len(brand_name_elements)) + 1):
                         brand_name = (
                             await brand_name_elements[i].text_content()
                             if i < len(brand_name_elements)
@@ -167,17 +154,21 @@ async def main():
                             if i < len(product_name_elements)
                             else "[Product name not found]"
                         )
+                        product_size = (
+                            await product_size_elements[i].text_content()
+                            if i < len(product_size_elements)
+                            else "[Product size not found]"
+                        )
 
-                        full_name = f"{brand_name} {product_name}"
+                        full_name = f"{brand_name} {product_name} {product_size}"
+                        print(full_name)
 
                         all_items.append({i: full_name})
-
-                    await page.wait_for_timeout(300000000)
 
                     # gpt finds cloest product with name
 
                     prompt = f"""
-                    given the python dict, please return the key where the value of this key is closest to {item_name} in the {card_text_map}. 
+                    given the python dict, please return the key where the value of this key is closest to {item_name} in the {all_items}. 
 
                     give your confidence level on this from 0-10, which is your combined score from the following criteria:
 
@@ -210,16 +201,16 @@ async def main():
             have your explanation inside the JSON, your response should only contain the JSON and NOTHING ELSE
             """
                     response = await chat(prompt)
-                    response = await chat(prompt)
                     data = joshyTrain.extract_json(response)
                     confidence = int(data["confidence"])
                     i = int(data["key"])
                     item_div = await page.query_selector(
-                        f".MuiGrid-root-128.product-tile.MuiGrid-item-130.MuiGrid-grid-xs-6-168.MuiGrid-grid-sm-4-180.MuiGrid-grid-md-4-194.MuiGrid-grid-lg-3-207:nth-of-type({i}) .productlist-img"
+                        f'mg[data-automation-id="edo-products-list-product-image"]:nth({i})'
                     )
                     await item_div.click()
                     prompt = f"""Are these two the same item? {item_name} and {all_items[i]}, little difference in size by 1oz or smaller is okay. Respond with the following JSON format: {{"answer": "true or false", "reasoning": "your reasoning"}}"""
                     response = await joshyTrain.chat(prompt)
+                    print(response)
 
                 result_rows.append(row)
 
