@@ -1,6 +1,11 @@
 screenshot.jpg
 page_text.txt
 uploads/
+results/
+FritoLay
+page_text.txt
+screenshot.jpg
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

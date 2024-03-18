@@ -348,10 +348,11 @@ async def main():
             fileName = fileName.split("/")[1] + ".csv"
             # writing csv with new columns
             with open("./results/" + fileName, mode="w", newline="") as file:
-                fieldnames = result_rows[0].keys()
+                sorted_rows = sorted(result_rows, key=lambda x: x.get('product_name', ''))
+                fieldnames = sorted_rows[0].keys() if sorted_rows else []
                 dict_writer = csv.DictWriter(file, fieldnames=fieldnames)
                 dict_writer.writeheader()
-                dict_writer.writerows(result_rows)
+                dict_writer.writerows(sorted_rows)
 
 
 asyncio.run(main())
