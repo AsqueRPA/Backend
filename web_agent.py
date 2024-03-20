@@ -67,8 +67,7 @@ class WebAgent:
             You can record the response by answering with the following JSON format:
             {"record response": {"account": "Account", "email": "Email", "keyword": "Keyword", "question": "Question", "name": "Name of the reachout", "response": "Response"}}
 
-            If the request asks you to perform an action if an element can be found, you can verify that the element is not present by answering with the following JSON format:
-            {"element not present": "description of the element"}
+
 
             When responding with the JSON format, only include ONE JSON object and nothing else, no need for explanation.
 
@@ -90,32 +89,40 @@ class WebAgent:
         async with aiofiles.open(file_name, "w") as file:
             await file.write(text)
 
+    async def write_image_to_file(self, file_name, image):
+        async with aiofiles.open(file_name, "wb") as file:
+            await file.write(image)
+
     async def process_page(self):
         try:
             await self.page.wait_for_timeout(2000)
-            print("Getting text...")
-            page_text, tag_to_xpath = await tarsier.page_to_text(
-                self.page, tag_text_elements=True
-            )
-            await self.write_text_to_file("page_text.txt", page_text)
             print("Taking screenshot...")
-            await self.page.screenshot(path="screenshot.jpg", full_page=True)
+            screenshot, tag_to_xpath = await tarsier.page_to_image(self.page)
+            await self.write_image_to_file("screenshot.jpg", screenshot)
+
+            print("Getting text...")
+            page_text = tarsier._run_ocr(screenshot)
+            await self.write_text_to_file("page_text.txt", page_text)
         except Exception as e:
             print(e)
-            return
 
         self.base64_image = self.image_b64("screenshot.jpg")
         self.tag_to_xpath = tag_to_xpath
         self.page_text = page_text
 
     def extract_json(self, message):
-        json_regex = r"\{[\s\S]*\}"
-        matches = re.findall(json_regex, message)
+        # Normalize newlines and remove control characters except for tab
+        normalized_message = re.sub(r'[\r\n]+', ' ', message)  # Replace newlines with spaces
+        sanitized_message = re.sub(r'[^\x20-\x7E\t]', '', normalized_message)  # Remove non-printable chars
 
-        if matches:
+        # Attempt to find JSON starting and ending points without nested checks
+        start = sanitized_message.find('{')
+        end = sanitized_message.rfind('}')
+        
+        if start != -1 and end != -1 and end > start:
+            json_str = sanitized_message[start:end+1]
             try:
-                # Assuming the first match is the JSON we want
-                json_data = json.loads(matches[0])
+                json_data = json.loads(json_str)
                 return json_data
             except json.JSONDecodeError as e:
                 print(f"Error decoding JSON: {e}")
@@ -162,36 +169,35 @@ class WebAgent:
             self.step_count += 1
 
     async def chat(self, input):
-        self.messages = [
-            {"role": "system", "content": self.instructions},
+        await self.process_page()
+        self.messages.append(
             {"role": "user", "content": input},
-        ]
+        )
 
         print("User:", input)
 
         while True:
+            screenshot_msg = ""
             if self.base64_image:
-                self.messages.append(
-                    {
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "image_url",
-                                "image_url": {
-                                    "url": f"data:image/jpeg;base64,{self.base64_image}"
-                                },
+                screenshot_msg = {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{self.base64_image}"
                             },
-                            {
-                                "type": "text",
-                                "text": f"""Here's the screenshot of the website you are on right now.
+                        },
+                        {
+                            "type": "text",
+                            "text": f"""Here's the screenshot of the website you are on right now.
                                 \n{self.instructions}\n
                                 Here's the text representation of the website:
                                 \n{self.page_text}
                                 """,
-                            },
-                        ],
-                    }
-                )
+                        },
+                    ],
+                }
 
                 self.base64_image = None
 
@@ -199,7 +205,11 @@ class WebAgent:
                 try:
                     response = model.chat.completions.create(
                         model="gpt-4-vision-preview",
-                        messages=self.messages,
+                        messages=(
+                            [*self.messages, screenshot_msg]
+                            if screenshot_msg
+                            else self.messages
+                        ),
                         max_tokens=1024,
                     )
                     break
@@ -258,7 +268,10 @@ class WebAgent:
                     text_to_type = data["input"]["text"]
                     elements = await self.page.query_selector_all(self.tag_to_xpath[id])
                     if elements:
+                        await elements[0].fill("")
+                        await self.page.wait_for_timeout(2000)
                         await elements[0].type(text_to_type)
+                        await self.page.keyboard.press("Enter")
                         await self.write_code(
                             input,
                             f"""

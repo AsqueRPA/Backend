@@ -1,6 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import { Flow } from "../models/Flow.js";
+import { Proxy } from "../models/Proxy.js";
 import { jobQueue, scheduleReachoutJob } from "../utils/JobQueue.js";
 import {
   createAndShareSheet,
@@ -12,10 +13,22 @@ const router = express.Router();
 
 router.post("/reachout", async (req, res) => {
   try {
-    const { account, name, email, keyword, question, targetAmountResponse } =
-      req.body;
-    let flow = await Flow.findOne({ account, name, email, keyword, question });
-    if (flow === null) {
+    const { name, email, keyword, question, targetAmountResponse } = req.body;
+    let randomProxy;
+    let availableProxies = await Proxy.find({ isInUse: false });
+    if (availableProxies.length) {
+      randomProxy =
+        availableProxies[Math.floor(Math.random() * availableProxies.length)];
+    } else {
+      randomProxy = (await Proxy.aggregate([{ $sample: { size: 1 } }]))[0];
+    }
+
+    let flow;
+    let flows = await Flow.find({ name, email, keyword, question });
+    if (flows.length === 0) {
+      // if this is the first flow created for this user's question
+      
+      // create spreadsheet and new flow
       const sheetName = `${name}'s SurveyBara`;
       const sheetId = await createAndShareSheet(
         sheetName,
@@ -23,6 +36,9 @@ router.post("/reachout", async (req, res) => {
         question,
         targetAmountResponse
       );
+
+      const account = randomProxy.account;
+
       flow = new Flow({
         account,
         name,
@@ -34,8 +50,54 @@ router.post("/reachout", async (req, res) => {
         reachouts: [],
       });
       await flow.save();
+    } else {
+      // if the user already has flows for this question
+      let availableProxy;
+      let proxiesUsed = [];
+
+      // check if any of the existing flows can be ran right now
+      for (const existingFlow of flows) {
+        const proxy = await Proxy.findOne({ account: existingFlow.account });
+        if (!proxy.isInUse) {
+          availableProxy = proxy;
+          flow = existingFlow;
+          break;
+        }
+        proxiesUsed.push(proxy);
+      }
+
+      if (!availableProxy) {
+        // if not then find and available proxy
+        availableProxy = (
+          await Proxy.aggregate([
+            {
+              $match: { _id: { $nin: proxiesUsed.map((proxy) => proxy._id) } },
+            },
+            { $sample: { size: 1 } },
+          ])
+        )[0];
+        if (!availableProxy) {
+          // if there is no available proxy then pick random from used
+          const i = Math.floor(Math.random() * proxiesUsed.length);
+          availableProxy = proxiesUsed[i];
+          flow = flows[i];
+        } else {
+          // if there is then create new flow with new proxy
+          flow = new Flow({
+            account: availableProxy.account,
+            name,
+            email,
+            sheetId: flows[0].sheetId,
+            keyword,
+            question,
+            targetAmountResponse,
+            reachouts: [],
+          });
+        }
+      }
     }
 
+    // schedule this flow to be ran
     scheduleReachoutJob(
       account,
       email,
@@ -45,6 +107,22 @@ router.post("/reachout", async (req, res) => {
       flow.lastPage
     );
     return res.status(200).send("Reachout queued");
+  } catch (error) {
+    console.log(error);
+    return res.status(400).send("Something went wrong");
+  }
+});
+
+router.post("/add-proxy", async (req, res) => {
+  try {
+    const { url, account } = req.body;
+    let proxy = await Proxy.findOne({ url });
+    if (proxy) {
+      return res.status(400).send("Proxy already exists");
+    }
+    proxy = new Proxy({ url, account });
+    await proxy.save();
+    return res.status(200).send("Proxy added");
   } catch (error) {
     console.log(error);
     return res.status(400).send("Something went wrong");
