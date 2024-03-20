@@ -22,7 +22,7 @@ model = OpenAI()
 model.timeout = 30
 
 
-class JoshyTrain:
+class WebAgent:
     def __init__(self, page) -> None:
         self.base64_image = None
         self.tag_to_xpath = {}
