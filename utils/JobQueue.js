@@ -28,7 +28,7 @@ const setup = async () => {
 };
 
 const processJob = async (job) => {
-  const { account, email, keyword, question, type, lastPage } = job.data;
+  const { account, email, keyword, question, type, lastPage, targetAmountReachout } = job.data;
   const proxy = await Proxy.findOne({ account });
   proxy.isInUse = true;
   await proxy.save();
@@ -47,6 +47,8 @@ const processJob = async (job) => {
         question,
         "-l",
         lastPage,
+        "-t",
+        targetAmountReachout,
       ]);
 
       pythonProcess.stdout.on("data", (data) => {
@@ -127,18 +129,20 @@ function scheduleReplyJob(account, email, keyword, question, delay) {
             keyword,
             question,
           });
-          if (
-            flow.reachouts.filter((reachout) => reachout.response).length <
-            flow.targetAmountResponse
-          ) {
-            scheduleReachoutJob(
-              account,
-              email,
-              keyword,
-              question,
-              flow.lastPage
-            );
-          }
+          // // this is to schedule another reachout if amount response is not met
+          // // will be commented out first
+          // if (
+          //   flow.reachouts.filter((reachout) => reachout.response).length <
+          //   flow.targetAmountResponse
+          // ) {
+          //   scheduleReachoutJob(
+          //     account,
+          //     email,
+          //     keyword,
+          //     question,
+          //     flow.lastPage
+          //   );
+          // }
         })
         .catch((error) => {
           console.error(`Reply job ${job.id} failed`, error);
@@ -150,7 +154,7 @@ const HOURS = 3600000;
 
 const TIME_BEFORE_CHECKING_REPLY = 12 * HOURS; // 12 hours
 
-function scheduleReachoutJob(account, email, keyword, question, lastPage) {
+function scheduleReachoutJob(account, email, keyword, question, lastPage, targetAmountReachout) {
   jobQueues[account]
     .add({
       account,
@@ -158,6 +162,7 @@ function scheduleReachoutJob(account, email, keyword, question, lastPage) {
       keyword,
       question,
       lastPage,
+      targetAmountReachout,
       type: "reachout",
     })
     .then((job) => {

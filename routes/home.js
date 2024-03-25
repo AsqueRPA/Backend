@@ -15,9 +15,18 @@ const router = express.Router();
 
 router.post("/request-reachout", async (req, res) => {
   try {
-    const { name, email, targetAudience, question, targetAmountResponse } = req.body;
+    const { name, email, targetAudience, question, targetAmountResponse } =
+      req.body;
     await addToGoogleSheet(
-      [name, email, targetAudience, "", question, targetAmountResponse, "false"],
+      [
+        name,
+        email,
+        targetAudience,
+        "",
+        question,
+        targetAmountResponse,
+        "false",
+      ],
       "1iuv7C1jg5fmeFfcRakH_e9U2_0nkEP98pkqtHpy3Uaw"
     );
 
@@ -30,7 +39,15 @@ router.post("/request-reachout", async (req, res) => {
 
 router.post("/reachout", async (req, res) => {
   try {
-    const { name, email, targetAudience, keyword, question, targetAmountResponse } = req.body;
+    const {
+      name,
+      email,
+      targetAudience,
+      keyword,
+      question,
+      targetAmountResponse,
+      targetAmountReachout,
+    } = req.body;
     let randomProxy;
     let availableProxies = await Proxy.find({ isInUse: false });
     if (availableProxies.length) {
@@ -41,7 +58,14 @@ router.post("/reachout", async (req, res) => {
     }
 
     let flow;
-    let flows = await Flow.find({ name, email, targetAudience, keyword, question });
+    // search to see if there are existing flows for the user's question
+    let flows = await Flow.find({
+      name,
+      email,
+      targetAudience,
+      targetAmountResponse,
+      question,
+    });
     let account;
     if (flows.length === 0) {
       // if this is the first flow created for this user's question
@@ -70,61 +94,123 @@ router.post("/reachout", async (req, res) => {
       });
       await flow.save();
     } else {
-      // if the user already has flows for this question
-      let availableProxy;
-      let proxiesUsed = [];
+      // search to see if there are existing flows with this keyword
+      let keywordFlows = await Flow.find({
+        name,
+        email,
+        targetAudience,
+        keyword,
+        targetAmountResponse,
+        question,
+      });
 
-      // check if any of the existing flows can be ran right now
-      for (const existingFlow of flows) {
-        const proxy = await Proxy.findOne({ account: existingFlow.account });
-        if (!proxy.isInUse) {
-          availableProxy = proxy;
-          flow = existingFlow;
-          break;
+      if (keywordFlows.length === 0) {
+        // if the user doesn't have any flows with this keyword
+        account = randomProxy.account;
+        // create new flow with the same spreadsheet
+        flow = new Flow({
+          account,
+          name,
+          email,
+          targetAudience,
+          sheetId: flows[0].sheetId,
+          keyword,
+          question,
+          targetAmountResponse,
+          reachouts: [],
+        })
+      } else {
+        // if the user already has flows for this question and keyword
+        let availableProxy;
+        let proxiesUsed = [];
+
+        // check if any of the existing flows can be ran right now
+        for (const existingFlow of flows) {
+          const proxy = await Proxy.findOne({ account: existingFlow.account });
+          if (!proxy.isInUse) {
+            availableProxy = proxy;
+            flow = existingFlow;
+            break;
+          }
+          proxiesUsed.push(proxy);
         }
-        proxiesUsed.push(proxy);
-      }
 
-      if (!availableProxy) {
-        // if not then find and available proxy
-        availableProxy = (
-          await Proxy.aggregate([
-            {
-              $match: {
-                _id: { $nin: proxiesUsed.map((proxy) => proxy._id) },
-                isInUse: false,
-              },
-            },
-            { $sample: { size: 1 } },
-          ])
-        )[0];
         if (!availableProxy) {
-          // if there is no available proxy then pick random from used
-          const i = Math.floor(Math.random() * proxiesUsed.length);
-          availableProxy = proxiesUsed[i];
-          flow = flows[i];
-        } else {
-          // if there is then create new flow with new proxy
-          flow = new Flow({
-            account: availableProxy.account,
-            name,
-            email,
-            targetAudience,
-            sheetId: flows[0].sheetId,
-            keyword,
-            question,
-            targetAmountResponse,
-            reachouts: [],
-          });
-          await flow.save();
+          // if not then find and available proxy
+          availableProxy = (
+            await Proxy.aggregate([
+              {
+                $match: {
+                  _id: { $nin: proxiesUsed.map((proxy) => proxy._id) },
+                  isInUse: false,
+                },
+              },
+              { $sample: { size: 1 } },
+            ])
+          )[0];
+          if (!availableProxy) {
+            // if there is no available proxy then pick random from used
+            const i = Math.floor(Math.random() * proxiesUsed.length);
+            availableProxy = proxiesUsed[i];
+            flow = flows[i];
+          } else {
+            account = availableProxy.account;
+            // if there is then create new flow with new proxy
+            flow = new Flow({
+              account,
+              name,
+              email,
+              targetAudience,
+              sheetId: flows[0].sheetId,
+              keyword,
+              question,
+              targetAmountResponse,
+              reachouts: [],
+            });
+            await flow.save();
+          }
         }
       }
-      account = availableProxy.account;
     }
 
     // schedule this flow to be ran
-    scheduleReachoutJob(account, email, keyword, question, flow.lastPage);
+    scheduleReachoutJob(
+      account,
+      email,
+      keyword,
+      question,
+      flow.lastPage,
+      targetAmountReachout
+    );
     return res.status(200).send("Reachout queued");
+  } catch (error) {
+    console.log(error);
+    return res.status(400).send("Something went wrong");
+  }
+});
+
+router.post("/adjust-last-page", async (req, res) => {
+  try {
+    const {
+      name,
+      account,
+      email,
+      targetAudience,
+      keyword,
+      question,
+      newLastPage
+    } = req.body;
+    const flow = await Flow.findOne({
+      name,
+      account,
+      email,
+      targetAudience,
+      keyword,
+      question,
+    });
+    flow.lastPage = newLastPage;
+    await flow.save();
+    return res.status(200).send("Flow last page adjusted");
   } catch (error) {
     console.log(error);
     return res.status(400).send("Something went wrong");

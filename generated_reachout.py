@@ -27,6 +27,7 @@ async def main():
         parser.add_argument("-k", type=str)
         parser.add_argument("-q", type=str)
         parser.add_argument("-l", type=int)
+        parser.add_argument("-t", type=int)
 
         # Parse the arguments
         account = parser.parse_args().a
@@ -34,6 +35,7 @@ async def main():
         keyword = parser.parse_args().k
         question = parser.parse_args().q
         last_page = parser.parse_args().l
+        target_amount_reachout = parser.parse_args().t
 
         url = f"http://localhost:{port}/get-proxy/{account}"
         response = requests.get(url)
@@ -94,7 +96,8 @@ async def main():
             await page.wait_for_timeout(random.randint(1000, 3000))
             await page.get_by_label("Sign in", exact=True).click()
             print("finished logging in")
-            for _ in range(15):
+            count = 0
+            while count < target_amount_reachout:
                 await page.goto(
                     f"https://www.linkedin.com/search/results/people/?keywords={quote(keyword)}&origin=SWITCH_SEARCH_VERTICAL&sid=A~y&page={page_count}",
                     wait_until="domcontentloaded",
@@ -192,6 +195,7 @@ async def main():
                             response = requests.post(url, json=data)
                             print(response.status_code)
                             print(response.text)
+                            count += 1
                         except Exception as e:
                             print(e)
                     print("back")
