@@ -29,6 +29,9 @@ async def main():
                 # 'username': 'username',
                 # 'password': 'password'
             }
+
+            ## existing fake accounts
+            
             # account = "hugozhan0802@gmail.com"
             # keyword = "Berkeley"
             # last_page = 0
