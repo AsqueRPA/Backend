@@ -18,70 +18,88 @@ port = os.getenv("PORT")
 
 async def main():
     async with async_playwright() as p:
-        # Initialize the parser
-        parser = argparse.ArgumentParser()
-
-        # Add parameters
-        parser.add_argument("-a", type=str)
-        parser.add_argument("-e", type=str)
-        parser.add_argument("-k", type=str)
-        parser.add_argument("-q", type=str)
-        parser.add_argument("-l", type=int)
-
-        # Parse the arguments
-        account = parser.parse_args().a
-        email = parser.parse_args().e
-        keyword = parser.parse_args().k
-        question = parser.parse_args().q
-        last_page = parser.parse_args().l
-
-        url = f"http://localhost:{port}/get-proxy/{account}"
-        response = requests.get(url)
-        if response.status_code == 200:
-            response_data = response.json()
-            proxy = response_data.get("proxy")
-            password = proxy.get("password")
+        try:
+            account = "bysywbypex39934@hotmail.com"
+            keyword = "Berkeley"
+            last_page = 0
+            password = "jKibrui7w8:SdFYV7GS0r"
             proxy = {
-                "server": proxy.get("url"),
+                "server": "http://54.215.164.150:3128",
                 # uncomment later if server need auth
                 # 'username': 'username',
                 # 'password': 'password'
             }
-        else:
-            print(f"Error: {response.status_code}")
-            print(response.text)
-            return
+            # account = "hugozhan0802@gmail.com"
+            # keyword = "Berkeley"
+            # last_page = 0
+            # password = "huhu2001"
+            # proxy = {
+            #     "server": "http://54.183.164.4:3128",
+            #     # uncomment later if server need auth
+            #     # 'username': 'username',
+            #     # 'password': 'password'
+            # }
 
-        # account = "didi06280828@gmail.com"
-        # email = "hugozhan0802@gmail.com"
-        # keyword = "Berkeley"
-        # question = "Happy to connect!"
-        # target_amount_response = 10
-        # last_page = 0
-        # password = "didi2001"
-        # proxy = {
-        #     "server": "http://54.193.112.125:3128",
-        #     # uncomment later if server need auth
-        #     # 'username': 'username',
-        #     # 'password': 'password'
-        # }
+            # account = "yejoanna33@gmail.com"
+            # keyword = "Berkeley"
+            # last_page = 0
+            # password = "jojo2002"
+            # proxy = {
+            #     "server": "http://54.215.135.39:3128",
+            #     # uncomment later if server need auth
+            #     # 'username': 'username',
+            #     # 'password': 'password'
+            # }
 
-        browser = await p.chromium.launch(headless=False)
+            # account = "xiaokangzhan6@gmail.com"
+            # keyword = "Berkeley"
+            # last_page = 0
+            # password = "kangkang2001"
+            # proxy = {
+            #     "server": "http://54.67.17.85:3128",
+            #     # uncomment later if server need auth
+            #     # 'username': 'username',
+            #     # 'password': 'password'
+            # }
 
-        context = await browser.new_context(proxy=proxy)
-        page = await context.new_page()
-        try:
+            # account = "zhanhugo0802@gmail.com"
+            # keyword = "Berkeley"
+            # last_page = 20
+            # password = "gogo2001"
+            # proxy = {
+            #     "server": "http://54.193.32.52:3128",
+            #     # uncomment later if server need auth
+            #     # 'username': 'username',
+            #     # 'password': 'password'
+            # }
+
+            # account = "didi06280828@gmail.com"
+            # keyword = "Berkeley"
+            # target_amount_response = 10
+            # last_page = 0
+            # password = "didi2001"
+            # proxy = {
+            #     "server": "http://54.193.112.125:3128",
+            #     # uncomment later if server need auth
+            #     # 'username': 'username',
+            #     # 'password': 'password'
+            # }
+
+            browser = await p.chromium.launch(headless=False)
+
+            context = await browser.new_context(proxy=proxy)
+            page = await context.new_page()
+            page_count = last_page + 1
+
             # await page.goto(
             #     "http://whatismyipaddress.com/"
             # )  # Navigate to a site to test the proxy
             # await page.screenshot(path="screenshot.jpg")
             # await page.wait_for_timeout(999999999)
-            agent = WebAgent(page)
-
-            page_count = last_page + 2
 
             ###### login logic #######
             await page.goto("https://www.linkedin.com/")
+            await page.wait_for_timeout(9999999)
             await page.wait_for_timeout(random.randint(1000, 3000))
             await page.get_by_role("link", name="Sign in").click()
             await page.wait_for_timeout(random.randint(1000, 3000))
@@ -93,8 +111,9 @@ async def main():
             await page.get_by_label("Password").fill(password)
             await page.wait_for_timeout(random.randint(1000, 3000))
             await page.get_by_label("Sign in", exact=True).click()
+            await page.wait_for_timeout(9999999)
             print("finished logging in")
-            for _ in range(15):
+            while True:
                 await page.goto(
                     f"https://www.linkedin.com/search/results/people/?keywords={quote(keyword)}&origin=SWITCH_SEARCH_VERTICAL&sid=A~y&page={page_count}",
                     wait_until="domcontentloaded",
@@ -102,7 +121,6 @@ async def main():
                 for i in range(10):
                     start_time = time.time()  # capture the start time
                     try:
-                        print(1)
                         await page.wait_for_timeout(random.randint(1000, 3000))
                         person_selector = f"//li[contains(@class, 'reusable-search__result-container')][{i+1}]"
                         await page.wait_for_selector(person_selector, timeout=5000)
@@ -114,9 +132,7 @@ async def main():
                         print(e)
                         await page.mouse.click(0, 0)
                         continue
-                    # this might break
                     try:
-                        print(2)
                         await page.wait_for_timeout(random.randint(1000, 3000))
                         await page.wait_for_selector(
                             "h1.text-heading-xlarge.inline.t-24.v-align-middle.break-words",
@@ -141,7 +157,6 @@ async def main():
                     except Exception as e:
                         print(e)
                         continue
-                    print(3)
                     await page.wait_for_timeout(random.randint(1000, 3000))
                     for connect_button in connect_buttons:
                         try:
@@ -149,7 +164,7 @@ async def main():
                             connect_button_clicked = True
                         except Exception as e:
                             print(e)
-                    print(4)
+                    await page.wait_for_timeout(random.randint(1000, 3000))
                     if connect_button_clicked:
                         try:
                             await page.wait_for_timeout(random.randint(1000, 3000))
@@ -158,40 +173,21 @@ async def main():
                             )
                             await page.click('[aria-label="Add a note"]', timeout=5000)
                             await page.wait_for_timeout(random.randint(1000, 3000))
-
-                            # AGENT INPUT
-                            await agent.chat(
-                                f"""In the 'Add a note' text box, within 250 characters, write a quick introduction including the person's name if possible and ask the question: '{question}'. 
-                                Be concise, don't include any placeholder text, this will be the message sent to the recipient. 
-                                Somtimes you might accidentally select the search bar (usually with ID 13), usually the textbox has a smaller ID, such as 5. 
-                                Don't do anything else because it will disrupt the next step. 
-                                If there is text in the textbox already, it means you have already filled in the message, don't try to fill in the message again"""
+                            await page.type(
+                                'textarea[name="message"]',
+                                'Happy to connect!',
                             )
-
-                            # # MANUAL INPUT
-                            # await page.type(
-                            #     'textarea[name="message"]',
-                            #     'Happy to connect!',
-                            # )
-
                             await page.wait_for_timeout(random.randint(1000, 3000))
                             await page.click(
                                 ".artdeco-button.artdeco-button--2.artdeco-button--primary.ember-view.ml1",
                                 timeout=5000,
                             )
-                            linkedinUrl = page.url
-                            url = f"http://localhost:{port}/record-reachout"
-                            data = {
-                                "account": account,
-                                "email": email,
-                                "keyword": keyword,
-                                "question": question,
-                                "name": name,
-                                "linkedinUrl": linkedinUrl,
-                            }
-                            response = requests.post(url, json=data)
-                            print(response.status_code)
-                            print(response.text)
+                            await page.wait_for_timeout(random.randint(1000, 3000))
+                            modal_selector = '.artdeco-modal--layer-default.ip-fuse-limit-alert'
+                            modal_exists = await page.is_visible(modal_selector)
+                            if modal_exists:
+                                print("Connect invitation limit reached")
+                                return
                         except Exception as e:
                             print(e)
                     print("back")
@@ -199,24 +195,10 @@ async def main():
                     end_time = time.time()  # capture the end time
                     elapsed_time = end_time - start_time  # calculate elapsed time
                     print(f"The code took {elapsed_time} seconds to run.")
-
-                url = f"http://localhost:{port}/update-last-page"
-                data = {
-                    "account": account,
-                    "email": email,
-                    "keyword": keyword,
-                    "question": question,
-                    "lastPage": page_count,
-                }
-                response = requests.post(url, json=data)
-                if response.status_code != 200:
-                    print(f"Error: {response.status_code}")
-                    print(response.text)
                 page_count += 1
         except Exception as e:
             print(e)
             await page.screenshot(path="screenshot.jpg")
             send_email("hugozhan0802@gmail.com", "Error", str(e), "screenshot.jpg")
-
 
 asyncio.run(main())

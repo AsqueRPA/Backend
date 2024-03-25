@@ -2,11 +2,15 @@ import express from "express";
 import cors from "cors";
 import bodyParser from "body-parser";
 import { connectDB } from "./utils/db.js";
+import { setup } from "./utils/JobQueue.js";
 import dotenv from "dotenv";
 dotenv.config();
 
 // Connect to MongoDB database
-(async () => await connectDB())();
+(async () => {
+  await connectDB();
+  await setup();
+})();
 
 const app = express();
 app.use(cors());
@@ -15,14 +19,12 @@ app.use(bodyParser.json());
 
 // Routers
 import home from "./routes/home.js";
-import attain from "./routes/attain.js";
 
 // middleware
 app.use(express.json());
 
 // Routes
 app.use("/", home);
-app.use("/attain", attain);
 
 // Real IP Address
 app.set("trust proxy", true);

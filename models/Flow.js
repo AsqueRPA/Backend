@@ -15,7 +15,15 @@ const FlowSchema = new mongoose.Schema({
   sheetId: {
     type: String,  
   },
+  sheetShared: {
+    type: Boolean,
+    default: false,
+  },
   name: {
+    type: String,
+    required: true,
+  },
+  targetAudience: {
     type: String,
     required: true,
   },

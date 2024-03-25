@@ -2,18 +2,35 @@ import express from "express";
 import dotenv from "dotenv";
 import { Flow } from "../models/Flow.js";
 import { Proxy } from "../models/Proxy.js";
-import { jobQueue, scheduleReachoutJob } from "../utils/JobQueue.js";
+import { scheduleReachoutJob } from "../utils/JobQueue.js";
 import {
+  addToGoogleSheet,
   createAndShareSheet,
+  givePermission,
   updateGoogleSheet,
 } from "../utils/google_actions.js";
 
 dotenv.config();
 const router = express.Router();
 
+router.post("/request-reachout", async (req, res) => {
+  try {
+    const { name, email, targetAudience, question, targetAmountResponse } = req.body;
+    await addToGoogleSheet(
+      [name, email, targetAudience, "", question, targetAmountResponse, "false"],
+      "1iuv7C1jg5fmeFfcRakH_e9U2_0nkEP98pkqtHpy3Uaw"
+    );
+
+    return res.status(200).send("Reachout requested");
+  } catch (error) {
+    console.log(error);
+    return res.status(400).send("Something went wrong.");
+  }
+});
+
 router.post("/reachout", async (req, res) => {
   try {
-    const { name, email, keyword, question, targetAmountResponse } = req.body;
+    const { name, email, targetAudience, keyword, question, targetAmountResponse } = req.body;
     let randomProxy;
     let availableProxies = await Proxy.find({ isInUse: false });
     if (availableProxies.length) {
@@ -25,24 +42,26 @@ router.post("/reachout", async (req, res) => {
 
     let flow;
     let flows = await Flow.find({ name, email, keyword, question });
+    let account;
     if (flows.length === 0) {
       // if this is the first flow created for this user's question
-      
+
       // create spreadsheet and new flow
       const sheetName = `${name}'s SurveyBara`;
+
       const sheetId = await createAndShareSheet(
         sheetName,
-        email,
-        question,
-        targetAmountResponse
+        "hugozhan0802@gmail.com",
+        question
       );
 
-      const account = randomProxy.account;
+      account = randomProxy.account;
 
       flow = new Flow({
         account,
         name,
         email,
+        targetAudience,
         sheetId,
         keyword,
         question,
@@ -71,7 +90,10 @@ router.post("/reachout", async (req, res) => {
         availableProxy = (
           await Proxy.aggregate([
             {
-              $match: { _id: { $nin: proxiesUsed.map((proxy) => proxy._id) } },
+              $match: {
+                _id: { $nin: proxiesUsed.map((proxy) => proxy._id) },
+                isInUse: false,
+              },
             },
             { $sample: { size: 1 } },
           ])
@@ -87,25 +109,21 @@ router.post("/reachout", async (req, res) => {
             account: availableProxy.account,
             name,
             email,
+            targetAudience,
             sheetId: flows[0].sheetId,
             keyword,
             question,
             targetAmountResponse,
             reachouts: [],
           });
+          await flow.save();
         }
       }
+      account = availableProxy.account;
     }
 
     // schedule this flow to be ran
-    scheduleReachoutJob(
-      account,
-      email,
-      keyword,
-      question,
-      targetAmountResponse,
-      flow.lastPage
-    );
+    scheduleReachoutJob(account, email, keyword, question, flow.lastPage);
     return res.status(200).send("Reachout queued");
   } catch (error) {
     console.log(error);
@@ -115,12 +133,12 @@ router.post("/reachout", async (req, res) => {
 
 router.post("/add-proxy", async (req, res) => {
   try {
-    const { url, account } = req.body;
+    const { url, account, password } = req.body;
     let proxy = await Proxy.findOne({ url });
     if (proxy) {
       return res.status(400).send("Proxy already exists");
     }
-    proxy = new Proxy({ url, account });
+    proxy = new Proxy({ url, account, password, isInUse: false });
     await proxy.save();
     return res.status(200).send("Proxy added");
   } catch (error) {
@@ -134,6 +152,25 @@ router.post("/record-reachout", async (req, res) => {
     const { account, email, keyword, question, name, linkedinUrl } = req.body;
     const flow = await Flow.findOne({ account, email, keyword, question });
     flow.reachouts.push({ name, response: "", linkedinUrl });
+    const responseCount = flow.reachouts.filter(
+      (reachout) => reachout.response !== ""
+    ).length;
+    const masterSheetRowData = [
+      name,
+      email,
+      flow.targetAudience,
+      keyword,
+      question,
+      flow.targetAmountResponse,
+      "true",
+      flow.reachouts.length,
+      responseCount,
+      "https://docs.google.com/spreadsheets/d/" + flow.sheetId,
+    ];
+    await updateGoogleSheet(
+      masterSheetRowData,
+      "1iuv7C1jg5fmeFfcRakH_e9U2_0nkEP98pkqtHpy3Uaw"
+    );
     await flow.save();
     return res.status(200).send("Reachout recorded");
   } catch (error) {
@@ -168,10 +205,34 @@ router.post("/record-response", async (req, res) => {
         linkedinUrl = reachout.linkedinUrl;
       }
     });
+    const responseCount = flow.reachouts.filter(
+      (reachout) => reachout.response !== ""
+    ).length;
+
+    if (!flow.sheetShared) {
+      await givePermission(flow.sheetId, email);
+      flow.sheetShared = true;
+    }
     await flow.save();
     const sheetId = flow.sheetId;
-    const rowData = [name, linkedinUrl, response]; //hugo how do we make sure response is good? so record-response route should be called after llm validate if the response is good?
-    await updateGoogleSheet(rowData, sheetId);
+    const userSheetRowData = [name, linkedinUrl, response];
+    await addToGoogleSheet(userSheetRowData, sheetId);
+    const masterSheetRowData = [
+      name,
+      email,
+      flow.targetAudience,
+      keyword,
+      question,
+      flow.targetAmountResponse,
+      "true",
+      flow.reachouts.length,
+      responseCount,
+      "https://docs.google.com/spreadsheets/d/" + flow.sheetId,
+    ];
+    await updateGoogleSheet(
+      masterSheetRowData,
+      "1iuv7C1jg5fmeFfcRakH_e9U2_0nkEP98pkqtHpy3Uaw"
+    );
     return res.status(200).send("Response recorded");
   } catch (error) {
     console.log(error);
@@ -205,38 +266,15 @@ router.post("/update-last-page", async (req, res) => {
   }
 });
 
-router.get("/jobs-queued", async (req, res) => {
+router.get("/get-proxy/:account", async (req, res) => {
   try {
-    const jobs = await jobQueue.getJobs(["waiting", "delayed", "active"]);
-    return res.status(200).send({ jobsQueued: jobs.length });
+    const { account } = req.params;
+    const proxy = await Proxy.findOne({ account });
+    return res.status(200).send({ proxy });
   } catch (error) {
     console.log(error);
     return res.status(400).send("Something went wrong");
   }
 });
-
-// router.post("/zapier-hook", async (req, res) => {
-//   console.log('zapier has called this route')
-//   try {
-//     // Extract data from the request body
-//     const { id, sheet_url } = req.body; // Adjust these fields based on what you're sending from Zapier
-//     console.log('Data: ', req.body)
-
-//     // Send a success response back to Zapier
-//     res.status(200).json({ message: "Data received and recorded successfully" });
-
-//     // Perform your database operation here
-//     const flow = await Flow.findById(id);
-//     if (!flow) {
-//       return res.status(404).json({ message: "This outreach flow not found" });
-//     }
-//     flow.sheetUrl = sheet_url;
-//     await flow.save();
-//   } catch (error) {
-//     console.error("Error saving data from Zapier:", error);
-//     console.log("Error saving data from Zapier:", error);
-//     res.status(500).json({ message: "Failed to record data" });
-//   }
-// });
 
 export default router;

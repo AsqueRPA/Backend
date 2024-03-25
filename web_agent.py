@@ -61,15 +61,8 @@ class WebAgent:
             You can record the reachout by answering with the following JSON format:
             {"record reachout": {"email": "Email", "keyword": "Keyword", "question": "Question", "name": "Name of the reachout"}}
 
-            You can delete the reachout by answering with the following JSON format:
-            {"delete reachout": {"account": "Account", "email": "Email", "keyword": "Keyword", "question": "Question", "name": "Name of the reachout"}}
-
             You can record the response by answering with the following JSON format:
             {"record response": {"account": "Account", "email": "Email", "keyword": "Keyword", "question": "Question", "name": "Name of the reachout", "response": "Response"}}
-
-
-
-            When responding with the JSON format, only include ONE JSON object and nothing else, no need for explanation.
 
             Once you are on a URL and you have found the answer to the user's question, you can answer with a regular message.
 
@@ -112,24 +105,40 @@ class WebAgent:
 
     def extract_json(self, message):
         # Normalize newlines and remove control characters except for tab
-        normalized_message = re.sub(r'[\r\n]+', ' ', message)  # Replace newlines with spaces
-        sanitized_message = re.sub(r'[^\x20-\x7E\t]', '', normalized_message)  # Remove non-printable chars
+        normalized_message = re.sub(
+            r"[\r\n]+", " ", message
+        )  # Replace newlines with spaces
+        sanitized_message = re.sub(
+            r"[^\x20-\x7E\t]", "", normalized_message
+        )  # Remove non-printable chars
 
-        # Attempt to find JSON starting and ending points without nested checks
-        start = sanitized_message.find('{')
-        end = sanitized_message.rfind('}')
-        
-        if start != -1 and end != -1 and end > start:
-            json_str = sanitized_message[start:end+1]
-            try:
-                json_data = json.loads(json_str)
-                return json_data
-            except json.JSONDecodeError as e:
-                print(f"Error decoding JSON: {e}")
-                return {}
-        else:
-            print("No JSON found in the message")
-            return {}
+        json_objects = []
+        stack = []  # Stack to keep track of braces
+        start_index = None  # Start index of a JSON object
+
+        # Iterate through the message to find JSON structures
+        for i, char in enumerate(sanitized_message):
+            if char == "{":
+                stack.append("{")
+                if start_index is None:
+                    start_index = i  # Mark the start of a potential JSON object
+            elif char == "}":
+                if stack:
+                    stack.pop()
+                    if not stack:  # If stack is empty, we found a complete JSON object
+                        try:
+                            json_str = sanitized_message[
+                                start_index : i + 1
+                            ]  # Extract the JSON string
+                            json_data = json.loads(json_str)  # Convert string to JSON
+                            json_objects.append(json_data)  # Add to our list
+                            start_index = (
+                                None  # Reset start index for the next JSON object
+                            )
+                        except json.JSONDecodeError as e:
+                            print(f"Error decoding JSON: {e}")
+                            start_index = None  # Reset start index if decoding fails
+        return json_objects
 
     async def write_code(self, input, new_code):
         return
@@ -170,9 +179,10 @@ class WebAgent:
 
     async def chat(self, input):
         await self.process_page()
-        self.messages.append(
+        self.messages = [
+            {"role": "system", "content": self.instructions},
             {"role": "user", "content": input},
-        )
+        ]
 
         print("User:", input)
 
@@ -191,7 +201,6 @@ class WebAgent:
                         {
                             "type": "text",
                             "text": f"""Here's the screenshot of the website you are on right now.
-                                \n{self.instructions}\n
                                 Here's the text representation of the website:
                                 \n{self.page_text}
                                 """,
@@ -232,171 +241,157 @@ class WebAgent:
                 }
             )
 
-            self.messages = [self.messages[0]] + self.messages[-4:]
-
             print("Browser Assistant:", message_text)
 
-            data = self.extract_json(message_text)
+            data_list = self.extract_json(message_text)
+            should_continue = False
             try:
-                if "click" in data:
-                    id = int(data["click"])
-                    elements = await self.page.query_selector_all(self.tag_to_xpath[id])
-                    if elements:
-                        await elements[0].click()
+                for data in data_list:
+                    if "click" in data:
+                        id = int(data["click"])
+                        elements = await self.page.query_selector_all(
+                            self.tag_to_xpath[id]
+                        )
+                        if elements:
+                            await elements[0].click()
+                            await self.write_code(
+                                input,
+                                f"""
+                                    await page.wait_for_selector('{self.tag_to_xpath[id]}')
+                                    elements = await page.query_selector_all('{self.tag_to_xpath[id]}')
+                                    if elements:
+                                        await elements[0].click()
+                                        await page.wait_for_timeout(2000)
+                                """,
+                            )
+                        should_continue = True
+                    elif "url" in data:
+                        url = data["url"]
+                        await self.page.goto(url)
+                        await self.write_code(
+                            input,
+                            f"await page.goto('{url}', waitUntil='domcontentloaded')",
+                        )
+                        should_continue = True
+                    elif "input" in data:
+                        id = int(data["input"]["select"])
+                        text_to_type = data["input"]["text"]
+                        elements = await self.page.query_selector_all(
+                            self.tag_to_xpath[id]
+                        )
+                        if elements:
+                            await elements[0].fill("")
+                            await self.page.wait_for_timeout(2000)
+                            await elements[0].type(text_to_type)
+                            await self.page.keyboard.press("Enter")
+                            await self.write_code(
+                                input,
+                                f"""
+                                    await page.wait_for_selector('{self.tag_to_xpath[id]}')
+                                    elements = await page.query_selector_all('{self.tag_to_xpath[id]}')
+                                    if elements:
+                                        await elements[0].type('{text_to_type}')
+                                        await page.wait_for_timeout(2000)
+                                """,
+                            )
+                        should_continue = True
+                    elif "keyboard" in data:
+                        key = data["keyboard"]
+                        await self.page.keyboard.press(key)
                         await self.write_code(
                             input,
                             f"""
-                                await page.wait_for_selector('{self.tag_to_xpath[id]}')
-                                elements = await page.query_selector_all('{self.tag_to_xpath[id]}')
-                                if elements:
-                                    await elements[0].click()
-                                    await page.wait_for_timeout(2000)
+                                await page.keyboard.press('{key}'
+                                await page.wait_for_timeout(2000)
                             """,
                         )
-                    await self.process_page()
-                    continue
-                elif "url" in data:
-                    url = data["url"]
-                    await self.page.goto(url)
-                    await self.write_code(
-                        input, f"await page.goto('{url}', waitUntil='domcontentloaded')"
-                    )
-                    await self.process_page()
-                    continue
-                elif "input" in data:
-                    id = int(data["input"]["select"])
-                    text_to_type = data["input"]["text"]
-                    elements = await self.page.query_selector_all(self.tag_to_xpath[id])
-                    if elements:
-                        await elements[0].fill("")
-                        await self.page.wait_for_timeout(2000)
-                        await elements[0].type(text_to_type)
-                        await self.page.keyboard.press("Enter")
+                        should_continue = True
+                    elif "navigation" in data:
+                        navigation = data["navigation"]
+                        if navigation == "back":
+                            await self.page.go_back()
+                            await self.write_code(
+                                input,
+                                """
+                                    await page.go_back()
+                                    await page.wait_for_timeout(2000)
+                                """,
+                            )
+                        elif navigation == "forward":
+                            await self.page.go_forward()
+                            await self.write_code(
+                                input,
+                                """
+                                    await page.go_forward()
+                                    await page.wait_for_timeout(2000)
+                                """,
+                            )
+                        elif navigation == "reload":
+                            await self.page.reload()
+                            await self.write_code(
+                                input,
+                                """
+                                    await page.reload()
+                                    await page.wait_for_timeout(2000)
+                                """,
+                            )
+                        should_continue = True
+                    elif "element not present" in data:
                         await self.write_code(
                             input,
                             f"""
-                                await page.wait_for_selector('{self.tag_to_xpath[id]}')
-                                elements = await page.query_selector_all('{self.tag_to_xpath[id]}')
-                                if elements:
-                                    await elements[0].type('{text_to_type}')
-                                    await page.wait_for_timeout(2000)
+                                await agent.chat(\"\"\"{input}\"\"\")
                             """,
                         )
+                        should_continue = False
+                    elif "record response" in data:
+                        account = data["record response"]["account"]
+                        email = data["record response"]["email"]
+                        keyword = data["record response"]["keyword"]
+                        question = data["record response"]["question"]
+                        name = data["record response"]["name"]
+                        response = data["record response"]["response"]
+                        print(f"Recording response for {name}: {response}")
+                        url = f"http://localhost:{port}/record-response"
+
+                        data = {
+                            "account": account,
+                            "email": email,
+                            "keyword": keyword,
+                            "question": question,
+                            "name": name,
+                            "response": response,
+                        }
+
+                        response = requests.post(url, json=data)
+
+                        print(response.status_code)
+                        print(response.text)
+                        should_continue = False
+                    elif "record reachout" in data:
+                        account = data["record reachout"]["account"]
+                        email = data["record reachout"]["email"]
+                        keyword = data["record reachout"]["keyword"]
+                        question = data["record reachout"]["question"]
+                        name = data["record reachout"]["name"]
+                        print(
+                            f"Recording reachout for name: {name}, email: {email}, keyword: {keyword}, question: {question}"
+                        )
+                        url = f"http://localhost:{port}/record-reachout"
+                        data = {
+                            "account": account,
+                            "email": email,
+                            "keyword": keyword,
+                            "question": question,
+                            "name": name,
+                        }
+                        response = requests.post(url, json=data)
+                        print(response.status_code)
+                        print(response.text)
+                        should_continue = False
+                if should_continue:
                     await self.process_page()
                     continue
-                elif "keyboard" in data:
-                    key = data["keyboard"]
-                    await self.page.keyboard.press(key)
-                    await self.write_code(
-                        input,
-                        f"""
-                            await page.keyboard.press('{key}'
-                            await page.wait_for_timeout(2000)
-                        """,
-                    )
-                    await self.process_page()
-                    continue
-                elif "navigation" in data:
-                    navigation = data["navigation"]
-                    if navigation == "back":
-                        await self.page.go_back()
-                        await self.write_code(
-                            input,
-                            """
-                                await page.go_back()
-                                await page.wait_for_timeout(2000)
-                            """,
-                        )
-                    elif navigation == "forward":
-                        await self.page.go_forward()
-                        await self.write_code(
-                            input,
-                            """
-                                await page.go_forward()
-                                await page.wait_for_timeout(2000)
-                            """,
-                        )
-                    elif navigation == "reload":
-                        await self.page.reload()
-                        await self.write_code(
-                            input,
-                            """
-                                await page.reload()
-                                await page.wait_for_timeout(2000)
-                            """,
-                        )
-                    await self.process_page()
-                    continue
-                elif "element not present" in data:
-                    await self.write_code(
-                        input,
-                        f"""
-                            await agent.chat(\"\"\"{input}\"\"\")
-                        """,
-                    )
-                elif "record response" in data:
-                    account = data["record response"]["account"]
-                    email = data["record response"]["email"]
-                    keyword = data["record response"]["keyword"]
-                    question = data["record response"]["question"]
-                    name = data["record response"]["name"]
-                    response = data["record response"]["response"]
-                    print(f"Recording response for {name}: {response}")
-                    url = f"http://localhost:{port}/record-response"
-
-                    data = {
-                        "account": account,
-                        "email": email,
-                        "keyword": keyword,
-                        "question": question,
-                        "name": name,
-                        "response": response,
-                    }
-
-                    response = requests.post(url, json=data)
-
-                    print(response.status_code)
-                    print(response.text)
-                elif "record reachout" in data:
-                    account = data["record reachout"]["account"]
-                    email = data["record reachout"]["email"]
-                    keyword = data["record reachout"]["keyword"]
-                    question = data["record reachout"]["question"]
-                    name = data["record reachout"]["name"]
-                    print(
-                        f"Recording reachout for name: {name}, email: {email}, keyword: {keyword}, question: {question}"
-                    )
-                    url = f"http://localhost:{port}/record-reachout"
-                    data = {
-                        "account": account,
-                        "email": email,
-                        "keyword": keyword,
-                        "question": question,
-                        "name": name,
-                    }
-                    response = requests.post(url, json=data)
-                    print(response.status_code)
-                    print(response.text)
-                elif "delete reachout" in data:
-                    account = data["delete reachout"]["account"]
-                    email = data["delete reachout"]["email"]
-                    keyword = data["delete reachout"]["keyword"]
-                    question = data["delete reachout"]["question"]
-                    name = data["delete reachout"]["name"]
-                    print(
-                        f"Deleting reachout for name: {name}, email: {email}, keyword: {keyword}, question: {question}"
-                    )
-                    url = f"http://localhost:{port}/delete-reachout"
-                    data = {
-                        "account": account,
-                        "email": email,
-                        "keyword": keyword,
-                        "question": question,
-                        "name": name,
-                    }
-                    response = requests.post(url, json=data)
-                    print(response.status_code)
-                    print(response.text)
             except TimeoutError as e:
                 self.messages.append(
                     {

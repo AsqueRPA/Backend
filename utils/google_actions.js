@@ -1,6 +1,4 @@
 import { google } from "googleapis";
-import fs from "fs/promises";
-import readline from "readline/promises";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -8,37 +6,29 @@ const SCOPES = [
   "https://www.googleapis.com/auth/spreadsheets",
   "https://www.googleapis.com/auth/drive",
 ];
-const TOKEN_PATH = "token.json";
 
-async function authorize() {
-  const oAuth2Client = new google.auth.OAuth2(
-    process.env.GOOGLE_OAUTH_CLIENT_ID,
-    process.env.GOOGLE_OAUTH_CLIENT_SECRET,
-    ""
-  );
-  const token = JSON.parse(process.env.GOOGLE_TOKEN);
-  oAuth2Client.setCredentials(token);
-  return oAuth2Client;
+function authorizeServiceAccount() {
+  const serviceAccountAuth = new google.auth.GoogleAuth({
+    credentials: JSON.parse(process.env.GOOGLE_CLOUD_CREDENTIALS),
+    scopes: SCOPES,
+  });
+  return serviceAccountAuth;
 }
 
-async function getNewToken(oAuth2Client) {
-  const authUrl = oAuth2Client.generateAuthUrl({
-    access_type: "offline",
-    scope: SCOPES,
-  });
-  console.log("Authorize this app by visiting this url:", authUrl);
-
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
+export async function givePermission(sheetId, email) {
+  const drive = google.drive({
+    version: "v3",
+    auth: authorizeServiceAccount(),
   });
 
-  const code = await rl.question("Enter the code from that page here: ");
-  const token = await oAuth2Client.getToken(code);
-  await fs.writeFile(TOKEN_PATH, JSON.stringify(token.tokens));
-  console.log("Token stored to", TOKEN_PATH);
-
-  oAuth2Client.setCredentials(token.tokens);
+  await drive.permissions.create({
+    fileId: sheetId,
+    requestBody: {
+      type: "user",
+      role: "writer",
+      emailAddress: email,
+    },
+  });
 }
 
 async function createAndShareSheetHelper(auth, sheetName, email, question) {
@@ -58,16 +48,10 @@ async function createAndShareSheetHelper(auth, sheetName, email, question) {
     `Created Sheet "${sheetName}" with ID: ${sheetId}, and the url is https://docs.google.com/spreadsheets/d/${sheetId}`
   );
 
-  // // Share the Google Sheet with the specified email as an editor
-  // const drive = google.drive({ version: "v3", auth });
-  // await drive.permissions.create({
-  //   fileId: sheetId,
-  //   requestBody: {
-  //     type: "user",
-  //     role: "writer", // 'writer' permission allows the user to edit the sheet
-  //     emailAddress: email, // The email address of the user to share with
-  //   },
-  // });
+  // Share the Google Sheet with the specified email as an editor
+  await givePermission(sheetId, email);
+  await givePermission(sheetId, "hugozhan0802@gmail.com");
+  await givePermission(sheetId, "dyllanliuuu@gmail.com");
 
   console.log(`Sheet "${sheetName}" shared with ${email} as an editor.`);
 
@@ -85,17 +69,8 @@ async function createAndShareSheetHelper(auth, sheetName, email, question) {
   return sheetId;
 }
 
-export async function createAndShareSheet(
-  sheetName,
-  email,
-  question,
-  targetAmountResponse
-) {
-  const auth = await authorize();
-  // const sheetName = "Your Sheet Name"; // Set your desired sheet name here
-  // const email = "example@example.com"; // Set the email to share the sheet with here
-  // const question = "Your Question Here"; // Set your question here
-
+export async function createAndShareSheet(sheetName, email, question) {
+  const auth = authorizeServiceAccount();
   const sheetId = await createAndShareSheetHelper(
     auth,
     sheetName,
@@ -105,8 +80,8 @@ export async function createAndShareSheet(
   return sheetId;
 }
 
-export async function updateGoogleSheet(rowData, sheetId) {
-  const auth = await authorize();
+export async function addToGoogleSheet(rowData, sheetId) {
+  const auth = authorizeServiceAccount();
   const sheets = google.sheets({ version: "v4", auth });
   // Find the first empty row
   let range = "Sheet1"; // Default to the first sheet; adjust as needed
@@ -138,6 +113,58 @@ export async function updateGoogleSheet(rowData, sheetId) {
 
   console.log(`Row added to Sheet ID ${sheetId} at row ${firstEmptyRow}`);
 }
-//test
-//   const rowData = ['dyllan', 'linkedin.com', 'thanks'];
-//   updateGoogleSheet(rowData, '1DROMgRDjRtZQzWUByqTTrLHY5lzJm72z_OPL_-V3FQE').catch(console.error);
+
+export async function updateGoogleSheet(rowData, sheetId) {
+  const auth = authorizeServiceAccount();
+  const sheets = google.sheets({ version: 'v4', auth });
+  
+  // Read the first four columns where your data is located
+  const range = 'Sheet1!A:D'; // Adjust 'Sheet1' and range as necessary
+  const readResponse = await sheets.spreadsheets.values.get({
+    spreadsheetId: sheetId,
+    range: range,
+  });
+  const rows = readResponse.data.values || [];
+  
+  // Find the row number where all four column values match
+  let rowNumber = rows.findIndex(row => 
+    row.length >= 4 &&
+    row[0] === rowData[0] &&
+    row[1] === rowData[1] &&
+    row[2] === rowData[2] &&
+    row[3] === rowData[3]
+  ) + 1; // +1 because Sheets is 1-indexed
+
+  if (rowNumber === 0) {
+    console.log('No matching row found');
+    return; // No matching row found, exit the function
+  }
+
+  // Prepare the range for updating the found row
+  let updateRange = `Sheet1!A${rowNumber}:I${rowNumber}`; // Adjust 'Sheet1' as necessary
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: sheetId,
+    range: updateRange,
+    valueInputOption: 'RAW',
+    requestBody: {
+      values: [rowData], // newValues should be an array of new values for the row
+    },
+  });
+
+  console.log(`Row ${rowNumber} updated in Sheet ID ${sheetId}`);
+}
+
+// const masterSheetRowData = [
+//   "Matthew",
+//   "matt@embeddables.com",
+//   "Gowth Lead / VP Growth / Head of Growth / co-founder working on growth at consumer companies, seed - series C, ideally in software or healthcare",
+//   "What is your biggest pain point right now when it comes to hitting your growth goals?",
+//   30,
+//   "true",
+//   115,
+//   1,
+//   "https://docs.google.com/spreadsheets/d/" + "1KApWRrFzMhI2u9wADL2ohFbDIhAJv8EVPD3OnKhmkZo"
+// ];
+
+// updateGoogleSheet(masterSheetRowData, "1iuv7C1jg5fmeFfcRakH_e9U2_0nkEP98pkqtHpy3Uaw")
+

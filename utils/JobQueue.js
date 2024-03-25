@@ -2,19 +2,43 @@ import Bull from "bull";
 import dotenv from "dotenv";
 import { spawn } from "child_process";
 import { Flow } from "../models/Flow.js";
+import { Proxy } from "../models/Proxy.js";
 
 dotenv.config();
 
-const jobQueue = new Bull("jobQueue", {
-  redis: {
-    host: process.env.REDIS_HOST, // e.g., '127.0.0.1'
-    port: process.env.REDIS_PORT, // e.g., 6379
-  },
-});
-await jobQueue.empty();
+const jobQueues = {};
 
-jobQueue.process(async (job) => {
-  const { account, email, keyword, question, type, targetAmountResponse, lastPage } = job.data;
+const setup = async () => {
+  const proxies = await Proxy.find({});
+  proxies.forEach(
+    (proxy) =>
+      (jobQueues[proxy.account] = new Bull(`${proxy.account}-jobQueue`, {
+        redis: {
+          host: process.env.REDIS_HOST, // e.g., '127.0.0.1'
+          port: process.env.REDIS_PORT, // e.g., 6379
+        },
+      }))
+  );
+
+  await Promise.all(
+    proxies.map(async (proxy) => await jobQueues[proxy.account].empty())
+  );
+
+  proxies.forEach((proxy) => jobQueues[proxy.account].process(processJob));
+};
+
+const processJob = async (job) => {
+  const {
+    account,
+    email,
+    keyword,
+    question,
+    type,
+    lastPage,
+  } = job.data;
+  const proxy = await Proxy.findOne({ account });
+  proxy.isInUse = true;
+  await proxy.save();
   if (type === "reachout") {
     return new Promise((resolve, reject) => {
       const pythonProcess = spawn("python3.11", [
@@ -28,8 +52,6 @@ jobQueue.process(async (job) => {
         keyword,
         "-q",
         question,
-        "-t",
-        targetAmountResponse,
         "-l",
         lastPage,
       ]);
@@ -42,7 +64,9 @@ jobQueue.process(async (job) => {
         console.error(`stderr: ${data}`);
       });
 
-      pythonProcess.on("close", (code) => {
+      pythonProcess.on("close", async (code) => {
+        proxy.isInUse = false;
+        await proxy.save();
         if (code === 0) {
           resolve(`Process completed with code ${code}`);
         } else {
@@ -78,7 +102,9 @@ jobQueue.process(async (job) => {
         console.error(`stderr: ${data}`);
       });
 
-      pythonProcess.on("close", (code) => {
+      pythonProcess.on("close", async (code) => {
+        proxy.isInUse = false;
+        await proxy.save();
         if (code === 0) {
           resolve(`Process completed with code ${code}`);
         } else {
@@ -87,10 +113,10 @@ jobQueue.process(async (job) => {
       });
     });
   }
-});
+};
 
 function scheduleReplyJob(account, email, keyword, question, delay) {
-  jobQueue
+  jobQueues[account]
     .add(
       { account, email, keyword, question, type: "reply" },
       {
@@ -102,12 +128,23 @@ function scheduleReplyJob(account, email, keyword, question, delay) {
         .finished()
         .then(async () => {
           console.log(`Reply job ${job.id} completed`);
-          const flow = await Flow.findOne({ account, email, keyword, question });
+          const flow = await Flow.findOne({
+            account,
+            email,
+            keyword,
+            question,
+          });
           if (
             flow.reachouts.filter((reachout) => reachout.response).length <
             flow.targetAmountResponse
           ) {
-            scheduleReachoutJob(account, email, keyword, question, flow.targetAmountResponse, flow.lastPage);
+            scheduleReachoutJob(
+              account,
+              email,
+              keyword,
+              question,
+              flow.lastPage
+            );
           }
         })
         .catch((error) => {
@@ -116,15 +153,36 @@ function scheduleReplyJob(account, email, keyword, question, delay) {
     });
 }
 
-function scheduleReachoutJob(account, email, keyword, question, targetAmountResponse, lastPage) {
-  jobQueue
-    .add({ account, email, keyword, question, targetAmountResponse, lastPage, type: "reachout" })
+const TIME_BEFORE_CHECKING_REPLY = 3600000 * 0; // 12 hours
+
+function scheduleReachoutJob(
+  account,
+  email,
+  keyword,
+  question,
+  lastPage
+) {
+  jobQueues[account]
+    .add({
+      account,
+      email,
+      keyword,
+      question,
+      lastPage,
+      type: "reachout",
+    })
     .then((job) => {
       job
         .finished()
         .then(async () => {
           console.log(`Reachout job ${job.id} completed`);
-          scheduleReplyJob(account, email, keyword, question, 3000);
+          scheduleReplyJob(
+            account,
+            email,
+            keyword,
+            question,
+            TIME_BEFORE_CHECKING_REPLY
+          );
         })
         .catch((error) => {
           console.error(`Reachout job ${job.id} failed`, error);
@@ -132,4 +190,4 @@ function scheduleReachoutJob(account, email, keyword, question, targetAmountResp
     });
 }
 
-export { scheduleReachoutJob, jobQueue };
+export { scheduleReachoutJob, setup };
