@@ -41,7 +41,7 @@ router.post("/reachout", async (req, res) => {
     }
 
     let flow;
-    let flows = await Flow.find({ name, email, keyword, question });
+    let flows = await Flow.find({ name, email, targetAudience, keyword, question });
     let account;
     if (flows.length === 0) {
       // if this is the first flow created for this user's question

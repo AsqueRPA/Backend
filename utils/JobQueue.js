@@ -28,14 +28,7 @@ const setup = async () => {
 };
 
 const processJob = async (job) => {
-  const {
-    account,
-    email,
-    keyword,
-    question,
-    type,
-    lastPage,
-  } = job.data;
+  const { account, email, keyword, question, type, lastPage } = job.data;
   const proxy = await Proxy.findOne({ account });
   proxy.isInUse = true;
   await proxy.save();
@@ -153,15 +146,11 @@ function scheduleReplyJob(account, email, keyword, question, delay) {
     });
 }
 
-const TIME_BEFORE_CHECKING_REPLY = 3600000 * 0; // 12 hours
+const HOURS = 3600000;
 
-function scheduleReachoutJob(
-  account,
-  email,
-  keyword,
-  question,
-  lastPage
-) {
+const TIME_BEFORE_CHECKING_REPLY = 12 * HOURS; // 12 hours
+
+function scheduleReachoutJob(account, email, keyword, question, lastPage) {
   jobQueues[account]
     .add({
       account,

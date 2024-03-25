@@ -14,42 +14,42 @@ port = os.getenv("PORT")
 
 async def main():
     async with async_playwright() as p:
-        # # Initialize the parser
-        # parser = argparse.ArgumentParser()
+        # Initialize the parser
+        parser = argparse.ArgumentParser()
 
-        # # Define a custom argument type for a list of strings
-        # def list_of_strings(arg):
-        #     return arg.split(",")
+        # Define a custom argument type for a list of strings
+        def list_of_strings(arg):
+            return arg.split(",")
 
-        # # Add parameters
-        # parser.add_argument("-a", type=str)
-        # parser.add_argument("-e", type=str)
-        # parser.add_argument("-k", type=str)
-        # parser.add_argument("-q", type=str)
-        # parser.add_argument("-r", type=list_of_strings)
+        # Add parameters
+        parser.add_argument("-a", type=str)
+        parser.add_argument("-e", type=str)
+        parser.add_argument("-k", type=str)
+        parser.add_argument("-q", type=str)
+        parser.add_argument("-r", type=list_of_strings)
 
-        # # Parse the arguments
-        # account = parser.parse_args().a
-        # email = parser.parse_args().e
-        # keyword = parser.parse_args().k
-        # question = parser.parse_args().q
-        # reachouts = parser.parse_args().r
+        # Parse the arguments
+        account = parser.parse_args().a
+        email = parser.parse_args().e
+        keyword = parser.parse_args().k
+        question = parser.parse_args().q
+        reachouts = parser.parse_args().r
 
-        account = "hugozhan0802@gmail.com"
-        email = "hugozhan0802@gmail.com"
-        keyword = "Growth Lead"
-        question = "What is your biggest pain point right now when it comes to hitting your growth goals?"
-        reachouts = [
-            "Gauri Pitke",
-            "Alex Campbell",
-            "Maxime RONDEAU",
-            "Lucas Swisher",
-            "Andy Zhu",
-            "Marina Petrichenko (Crypto Marina)",
-            "Andrew Hemingway",
-            "Diana Vas",
-            "Edouard Ugeuen",
-        ]
+        # account = "hugozhan0802@gmail.com"
+        # email = "hugozhan0802@gmail.com"
+        # keyword = "Growth Lead"
+        # question = "What is your biggest pain point right now when it comes to hitting your growth goals?"
+        # reachouts = [
+        #     "Gauri Pitke",
+        #     "Alex Campbell",
+        #     "Maxime RONDEAU",
+        #     "Lucas Swisher",
+        #     "Andy Zhu",
+        #     "Marina Petrichenko (Crypto Marina)",
+        #     "Andrew Hemingway",
+        #     "Diana Vas",
+        #     "Edouard Ugeuen",
+        # ]
 
         url = f"http://localhost:{port}/get-proxy/{account}"
         response = requests.get(url)
@@ -68,19 +68,7 @@ async def main():
             print(response.text)
             return
 
-        # account = "didi06280828@gmail.com"
-        # email = "hugozhan0802@gmail.com"
-        # keyword = "Berkeley"
-        # question = "Happy to connect!"
-        # target_amount_response = 10
-        # last_page = 0
-        # password = "didi2001"
-        # proxy = {
-        #     "server": "http://54.193.112.125:3128",
-        #     # uncomment later if server need auth
-        #     # 'username': 'username',
-        #     # 'password': 'password'
-        # }
+        print(proxy)
 
         browser = await p.chromium.launch(headless=False)
 
@@ -131,7 +119,7 @@ async def main():
                     await agent.process_page()
                     try:
                         await asyncio.wait_for(
-                            await agent.chat(
+                            agent.chat(
                                 f"""
                             YOU HAVE TO EITHER FOLLOW UP ON THE REACHOUT OR RECORD THE RESPONSE OF THE REACHOUT, DONT USE ELEMENT NOT PRESENT
                                 1. If the person doesn't have a response or the response is not related to the question, type a follow up message and ask about the {question} again in a polite way. Only after you recieve a screenshot verifying that the message is typed in the message input box, click send.
