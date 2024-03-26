@@ -62,11 +62,12 @@ async def main():
         # last_page = 0
         # password = "didi2001"
         # proxy = {
-        #     "server": "http://54.193.112.125:3128",
+        #     "server": "http://13.52.99.7:3128",
         #     # uncomment later if server need auth
         #     # 'username': 'username',
         #     # 'password': 'password'
         # }
+        print(proxy)
 
         browser = await p.chromium.launch(headless=False)
 
@@ -77,6 +78,7 @@ async def main():
             #     "http://whatismyipaddress.com/"
             # )  # Navigate to a site to test the proxy
             # await page.screenshot(path="screenshot.jpg")
+            # await page.goto("https://www.linkedin.com/")
             # await page.wait_for_timeout(999999999)
             agent = WebAgent(page)
 

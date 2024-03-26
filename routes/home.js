@@ -22,8 +22,8 @@ router.post("/request-reachout", async (req, res) => {
         name,
         email,
         targetAudience,
-        "",
         question,
+        "",
         targetAmountResponse,
         "false",
       ],
@@ -118,7 +118,7 @@ router.post("/reachout", async (req, res) => {
           question,
           targetAmountResponse,
           reachouts: [],
-        })
+        });
       } else {
         // if the user already has flows for this question and keyword
         let availableProxy;
@@ -129,6 +129,7 @@ router.post("/reachout", async (req, res) => {
           const proxy = await Proxy.findOne({ account: existingFlow.account });
           if (!proxy.isInUse) {
             availableProxy = proxy;
+            account = availableProxy.account;
             flow = existingFlow;
             break;
           }
@@ -152,6 +153,7 @@ router.post("/reachout", async (req, res) => {
             // if there is no available proxy then pick random from used
             const i = Math.floor(Math.random() * proxiesUsed.length);
             availableProxy = proxiesUsed[i];
+            account = availableProxy.account;
             flow = flows[i];
           } else {
             account = availableProxy.account;
@@ -198,7 +200,7 @@ router.post("/adjust-last-page", async (req, res) => {
       targetAudience,
       keyword,
       question,
-      newLastPage
+      newLastPage,
     } = req.body;
     const flow = await Flow.findOne({
       name,
@@ -238,26 +240,41 @@ router.post("/record-reachout", async (req, res) => {
     const { account, email, keyword, question, name, linkedinUrl } = req.body;
     const flow = await Flow.findOne({ account, email, keyword, question });
     flow.reachouts.push({ name, response: "", linkedinUrl });
-    const responseCount = flow.reachouts.filter(
-      (reachout) => reachout.response !== ""
-    ).length;
+    await flow.save();
+    const allFlows = await Flow.find({
+      name: flow.name,
+      email,
+      targetAudience: flow.targetAudience,
+      question,
+      targetAmountResponse: flow.targetAmountResponse,
+    });
+    
+    let allResponseCount = 0;
+    let allReachoutCount = 0;
+    allFlows.forEach((flow) => {
+      const responseCount = flow.reachouts.filter(
+        (reachout) => reachout.response !== ""
+      ).length;
+      allResponseCount += responseCount;
+      allReachoutCount += flow.reachouts.length;
+    });
+
     const masterSheetRowData = [
-      name,
+      flow.name,
       email,
       flow.targetAudience,
-      keyword,
       question,
+      keyword,
       flow.targetAmountResponse,
       "true",
-      flow.reachouts.length,
-      responseCount,
+      allReachoutCount,
+      allResponseCount,
       "https://docs.google.com/spreadsheets/d/" + flow.sheetId,
     ];
     await updateGoogleSheet(
       masterSheetRowData,
       "1iuv7C1jg5fmeFfcRakH_e9U2_0nkEP98pkqtHpy3Uaw"
     );
-    await flow.save();
     return res.status(200).send("Reachout recorded");
   } catch (error) {
     console.log(error);
@@ -291,28 +308,43 @@ router.post("/record-response", async (req, res) => {
         linkedinUrl = reachout.linkedinUrl;
       }
     });
-    const responseCount = flow.reachouts.filter(
-      (reachout) => reachout.response !== ""
-    ).length;
-
     if (!flow.sheetShared) {
       await givePermission(flow.sheetId, email);
       flow.sheetShared = true;
     }
     await flow.save();
+
+    const allFlows = await Flow.find({
+      name: flow.name,
+      email,
+      targetAudience: flow.targetAudience,
+      question,
+      targetAmountResponse: flow.targetAmountResponse,
+    });
+    
+    let allResponseCount = 0;
+    let allReachoutCount = 0;
+    allFlows.forEach((flow) => {
+      const responseCount = flow.reachouts.filter(
+        (reachout) => reachout.response !== ""
+      ).length;
+      allResponseCount += responseCount;
+      allReachoutCount += flow.reachouts.length;
+    });
+
     const sheetId = flow.sheetId;
     const userSheetRowData = [name, linkedinUrl, response];
     await addToGoogleSheet(userSheetRowData, sheetId);
     const masterSheetRowData = [
-      name,
+      flow.name,
       email,
       flow.targetAudience,
-      keyword,
       question,
+      keyword,
       flow.targetAmountResponse,
       "true",
-      flow.reachouts.length,
-      responseCount,
+      allReachoutCount,
+      allResponseCount,
       "https://docs.google.com/spreadsheets/d/" + flow.sheetId,
     ];
     await updateGoogleSheet(

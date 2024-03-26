@@ -141,7 +141,7 @@ export async function updateGoogleSheet(rowData, sheetId) {
   }
 
   // Prepare the range for updating the found row
-  let updateRange = `Sheet1!A${rowNumber}:I${rowNumber}`; // Adjust 'Sheet1' as necessary
+  let updateRange = `Sheet1!A${rowNumber}:J${rowNumber}`; // Adjust 'Sheet1' as necessary
   await sheets.spreadsheets.values.update({
     spreadsheetId: sheetId,
     range: updateRange,

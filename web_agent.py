@@ -1,5 +1,4 @@
-from openai import OpenAI
-import openai
+from openai import OpenAI, RateLimitError
 from base64 import b64encode
 import json
 from dotenv import load_dotenv
@@ -18,9 +17,10 @@ google_cloud_credentials = json.loads(os.getenv("GOOGLE_CLOUD_CREDENTIALS"))
 ocr_service = GoogleVisionOCRService(google_cloud_credentials)
 tarsier = Tarsier(ocr_service)
 
-model = OpenAI()
-model.timeout = 30
-
+api_keys = [
+    os.getenv("OPENAI_API_KEY"),
+    os.getenv("OPENAI_API_KEY1"),
+]
 
 class WebAgent:
     def __init__(self, page) -> None:
@@ -178,6 +178,8 @@ class WebAgent:
             self.step_count += 1
 
     async def chat(self, input):
+        model = OpenAI()
+        model.timeout = 30      
         await self.process_page()
         self.messages = [
             {"role": "system", "content": self.instructions},
@@ -222,11 +224,13 @@ class WebAgent:
                         max_tokens=1024,
                     )
                     break
-                except openai.RateLimitError as e:
+                except RateLimitError as e:
+                    model = OpenAI(api_key=api_keys[(attempt + 1) % len(api_keys)])
                     print(
-                        f"Rate limit exceeded, attempt {attempt + 1} of {3}. Retrying in {120} seconds..."
+                        f"Rate limit exceeded, attempt {attempt + 1} of {3}. Retrying with new API key..."
                     )
-                    time.sleep(120)
+                except Exception as e:
+                    print(e)
 
             if not response:
                 raise Exception("API call failed after retrying")
