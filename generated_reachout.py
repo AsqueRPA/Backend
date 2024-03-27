@@ -28,6 +28,7 @@ async def main():
         parser.add_argument("-q", type=str)
         parser.add_argument("-l", type=int)
         parser.add_argument("-t", type=int)
+        parser.add_argument("-c", type=str)
 
         # Parse the arguments
         account = parser.parse_args().a
@@ -36,6 +37,7 @@ async def main():
         question = parser.parse_args().q
         last_page = parser.parse_args().l
         target_amount_reachout = parser.parse_args().t
+        customized_message = parser.parse_args().c
 
         url = f"http://localhost:{port}/get-proxy/{account}"
         response = requests.get(url)
@@ -164,20 +166,21 @@ async def main():
                             await page.click('[aria-label="Add a note"]', timeout=5000)
                             await page.wait_for_timeout(random.randint(1000, 3000))
 
-                            # AGENT INPUT
-                            await agent.chat(
-                                f"""In the 'Add a note' text box, within 250 characters, write a quick introduction including the person's name if possible and ask the question: '{question}'. 
-                                Be concise, don't include any placeholder text, this will be the message sent to the recipient. 
-                                Somtimes you might accidentally select the search bar (usually with ID 13), usually the textbox has a smaller ID, such as 5. 
-                                Don't do anything else because it will disrupt the next step. 
-                                If there is text in the textbox already, it means you have already filled in the message, don't try to fill in the message again"""
-                            )
-
-                            # # MANUAL INPUT
-                            # await page.type(
-                            #     'textarea[name="message"]',
-                            #     'Happy to connect!',
-                            # )
+                            if customized_message:
+                                # MANUAL INPUT
+                                await page.type(
+                                    'textarea[name="message"]',
+                                    customized_message,
+                                )
+                            else:
+                                # AGENT INPUT
+                                await agent.chat(
+                                    f"""In the 'Add a note' text box, within 250 characters, write a quick introduction including the person's name if possible and ask the question: '{question}'. 
+                                    Be concise, don't include any placeholder text, this will be the message sent to the recipient. 
+                                    Somtimes you might accidentally select the search bar (usually with ID 13), usually the textbox has a smaller ID, such as 5. 
+                                    Don't do anything else because it will disrupt the next step. 
+                                    If there is text in the textbox already, it means you have already filled in the message, don't try to fill in the message again"""
+                                )
 
                             await page.wait_for_timeout(random.randint(1000, 3000))
                             await page.click(

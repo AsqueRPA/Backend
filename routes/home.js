@@ -47,6 +47,7 @@ router.post("/reachout", async (req, res) => {
       question,
       targetAmountResponse,
       targetAmountReachout,
+      customized_message,
     } = req.body;
     let randomProxy;
     let availableProxies = await Proxy.find({ isInUse: false });
@@ -182,7 +183,8 @@ router.post("/reachout", async (req, res) => {
       keyword,
       question,
       flow.lastPage,
-      targetAmountReachout
+      targetAmountReachout,
+      customized_message,
     );
     return res.status(200).send("Reachout queued");
   } catch (error) {

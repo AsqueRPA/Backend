@@ -28,7 +28,16 @@ const setup = async () => {
 };
 
 const processJob = async (job) => {
-  const { account, email, keyword, question, type, lastPage, targetAmountReachout } = job.data;
+  const {
+    account,
+    email,
+    keyword,
+    question,
+    type,
+    lastPage,
+    targetAmountReachout,
+    customized_message,
+  } = job.data;
   const proxy = await Proxy.findOne({ account });
   proxy.isInUse = true;
   await proxy.save();
@@ -49,6 +58,8 @@ const processJob = async (job) => {
         lastPage,
         "-t",
         targetAmountReachout,
+        "-c",
+        customized_message,
       ]);
 
       pythonProcess.stdout.on("data", (data) => {
@@ -154,7 +165,15 @@ const HOURS = 3600000;
 
 const TIME_BEFORE_CHECKING_REPLY = 12 * HOURS; // 12 hours
 
-function scheduleReachoutJob(account, email, keyword, question, lastPage, targetAmountReachout) {
+function scheduleReachoutJob(
+  account,
+  email,
+  keyword,
+  question,
+  lastPage,
+  targetAmountReachout,
+  customized_message
+) {
   jobQueues[account]
     .add({
       account,
@@ -163,6 +182,7 @@ function scheduleReachoutJob(account, email, keyword, question, lastPage, target
       question,
       lastPage,
       targetAmountReachout,
+      customized_message,
       type: "reachout",
     })
     .then((job) => {
